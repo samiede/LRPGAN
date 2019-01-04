@@ -296,47 +296,6 @@ class Dropout(nn.Dropout):
         return R
 
 
-class RelevanceNet(nn.Sequential):
-
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.relevanceOutput = None
-
-    def forward(self, input):
-
-        self.relevanceOutput = None
-
-        for idx, layer in enumerate(self):
-            input = layer.forward(input)
-
-            # save output of second-to-last layer to use in relevance propagation
-            if idx == len(self) - 2:
-                self.relevanceOutput = input
-
-        return input
-
-    def relprop(self):
-        R = self.relevanceOutput
-        print(self[-2::-1])
-        # For all layers except the last
-        for layer in self[-2::-1]:
-            R = layer.relprop(R)
-        return R
-
-
-class Layer(nn.Sequential):
-    # def __init__(self, *args):
-    #     super().__init__(*args)
-    #
-    # def forward(self, input):
-    #     return super().forward(input)
-
-    def relprop(self, R):
-        for layer in self[::-1]:
-            R = layer.relprop(R)
-        return R
-
-
 class FirstLinear(nn.Linear):
 
     def __init__(self, in_features, out_features, bias=False):
@@ -445,3 +404,66 @@ class ReshapeLayer(nn.Module):
 
     def forward(self, input):
         return input.view(-1, self.filters, self.height, self.width)
+
+
+class RelevanceNet(nn.Sequential):
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.relevanceOutput = None
+
+    def forward(self, input):
+
+        self.relevanceOutput = None
+
+        for idx, layer in enumerate(self):
+            input = layer.forward(input)
+
+            # save output of second-to-last layer to use in relevance propagation
+            if idx == len(self) - 2:
+                self.relevanceOutput = input
+
+        return input
+
+    def relprop(self):
+        R = self.relevanceOutput
+        # For all layers except the last
+        for layer in self[-2::-1]:
+            R = layer.relprop(R)
+        return R
+
+
+class Layer(nn.Sequential):
+    # def __init__(self, *args):
+    #     super().__init__(*args)
+    #
+    # def forward(self, input):
+    #     return super().forward(input)
+
+    def relprop(self, R):
+        for layer in self[::-1]:
+            R = layer.relprop(R)
+        return R
+
+
+class DiscriminatorNet(nn.Module):
+
+    def __init__(self, ndf, nc, ngpu=1):
+        super(DiscriminatorNet, self).__init__()
+
+        self.ngpu = ngpu
+        self.net = None
+
+    def forward(self, x):
+
+        if isinstance(x.data, torch.cuda.FloatTensor) and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
+        else:
+            output = self.net(x)
+        return output.view(-1, 1).squeeze(1)
+
+    def relprop(self):
+        return self.net.relprop()
+
+    def setngpu(self, ngpu):
+        self.ngpu = ngpu

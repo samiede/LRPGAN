@@ -21,16 +21,17 @@ highest = 1.0
 
 class Logger:
 
-    def __init__(self, model_name, data_name):
+    def __init__(self, model_name, data_name, dir_name):
         self.model_name = model_name
         self.data_name = data_name
 
         self.comment = '{}_{}'.format(model_name, data_name)
         # self.data_subdir = '{}/{}'.format(model_name, data_name)
-        self.data_subdir = '{}'.format(data_name)
+        self.data_subdir = '{}/{}'.format(dir_name, data_name)
+        self.log_subdir = '{}/{}'.format(dir_name, 'runs/')
 
         # TensorBoard
-        self.writer = SummaryWriter(comment=self.comment)
+        self.writer = SummaryWriter(log_dir=self.log_subdir, comment=self.comment)
 
     def log(self, d_error, g_error, epoch, n_batch, num_batches):
 
@@ -87,7 +88,7 @@ class Logger:
         self.save_torch_images(horizontal_grid, grid, epoch, n_batch)
 
     def save_torch_images(self, horizontal_grid, grid, epoch, n_batch, plot_horizontal=True):
-        out_dir = './output/{}'.format(self.data_subdir)
+        out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
 
         # Plot and save horizontal
@@ -109,7 +110,7 @@ class Logger:
         # plt.close()
 
     def _save_images(self, fig, epoch, n_batch, comment=''):
-        out_dir = './output/{}'.format(self.data_subdir)
+        out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
         fig.savefig('{}/{}_epoch_{}_batch_{}.png'.format(out_dir, comment, epoch, n_batch))
 
