@@ -24,7 +24,7 @@ parser.add_argument('--nz', type=int, default=100, help='size of the latent z ve
 parser.add_argument('--ngf', type=int, default=64, help='number of generator filters in first layer')
 parser.add_argument('--ndf', type=int, default=64, help='number of discriminator filters in first layer')
 parser.add_argument('--epochs', type=int, default=25, help='number of epochs to train for')
-parser.add_argument('--outf', default='../output', help='folder to output images and model checkpoints')
+parser.add_argument('--outf', default='output', help='folder to output images and model checkpoints')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--imageSize', type=int, default=64)
 parser.add_argument('--loadG', default='', help='path to generator (to continue training')
@@ -55,11 +55,10 @@ print(gpu)
 
 # load datasets
 if opt.dataset == 'mnist':
-    out_dir = '../dataset/MNIST'
+    out_dir = 'dataset/MNIST'
     dataset = datasets.MNIST(root=out_dir, train=True, download=True,
                              transform=transforms.Compose(
                                  [
-                                     transforms.Resize(opt.imageSize),
                                      transforms.ToTensor(),
                                      transforms.Normalize((0.5,), (0.5,)),
                                  ]
@@ -87,8 +86,6 @@ def noise(size):
     """
     # noinspection PyUnresolvedReferences
     z = torch.randn((size, 100))
-    # noinspection PyUnresolvedReferences
-    z = torch.reshape(z, (size, 100, 1, 1))
     return z
 
 
@@ -146,6 +143,12 @@ class DiscriminatorNet(nn.Module):
         else:
             output = self.net(x)
         return output
+
+    def relprop(self):
+        return self.net.relprop()
+
+    def setngpu(self, ngpu):
+        self.ngpu = ngpu
 
 
 class GeneratorNet(nn.Module):
@@ -286,14 +289,36 @@ for epoch in range(num_epochs):
 
         # Display Progress every few batches
         if n_batch % 100 == 0:
-            test_images = vectors_to_images(generator(test_noise))
-            test_images = test_images.data
+
+            # generate fake with fixed noise
+            test_fake = generator(test_noise)
+
+            # set ngpu to one, so relevance propagation works
+            if (opt.ngpu > 1):
+                discriminator.setngpu(1)
+
+            # eval needs to be set so batch norm works with batch size of 1
+            discriminator.eval()
+            test_result = discriminator(test_fake)
+            test_relevance = discriminator.relprop()
+
+            test_relevance = vectors_to_images(test_relevance)
+            test_fake = vectors_to_images(test_fake)
+
+            # set ngpu back to opt.ngpu
+            if (opt.ngpu > 1):
+                discriminator.setngpu(opt.ngpu)
+
+            # Add up relevance of all color channels
+            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+
             logger.log_images(
-                test_images, num_test_samples,
-                epoch, n_batch, num_batches
+                test_fake.detach(), test_relevance, 1,
+                epoch, n_batch, len(dataloader)
             )
+
             # Display status Logs
             logger.display_status(
-               epoch, num_epochs, n_batch, num_batches,
-               d_error, g_error, d_pred_real, d_pred_fake
+                epoch, num_epochs, n_batch, num_batches,
+                d_error, g_error, d_pred_real, d_pred_fake
             )

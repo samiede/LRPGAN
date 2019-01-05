@@ -55,7 +55,7 @@ print(gpu)
 
 # load datasets
 if opt.dataset == 'mnist':
-    out_dir = '../dataset/MNIST'
+    out_dir = 'dataset/MNIST'
     dataset = datasets.MNIST(root=out_dir, train=True, download=True,
                              transform=transforms.Compose(
                                  [

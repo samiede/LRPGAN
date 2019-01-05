@@ -61,7 +61,6 @@ class Logger:
 
         if format == 'NCHW':
             relevance = relevance.permute(0, 3, 1, 2)
-
         step = Logger._step(epoch, n_batch, num_batches)
         img_name = '{}/images{}'.format(self.comment, '')
 
@@ -196,6 +195,7 @@ def visualize(x, colormap):
     N = len(x)
     assert (N <= 16)
     x = colormap(x / np.abs(x).max())
+    print(x.shape)
 
     # Create a mosaic and upsample
     x = x.reshape([N, x.shape[2], x.shape[3], 3])

@@ -310,8 +310,8 @@ class FirstLinear(nn.Linear):
 
     def relprop(self, R):
         W = self.weight
-        V = torch.max(torch.DoubleTensor(1).zero_(), self.weight)
-        U = torch.min(torch.DoubleTensor(1).zero_(), self.weight)
+        V = torch.max(torch.Tensor(1).zero_(), self.weight)
+        U = torch.min(torch.Tensor(1).zero_(), self.weight)
         X = self.X
         L = self.X * 0 + utils.lowest
         H = self.X * 0 + utils.highest
@@ -319,7 +319,7 @@ class FirstLinear(nn.Linear):
         Z = torch.matmul(X, torch.t(W)) - torch.matmul(L, torch.t(V)) - torch.matmul(H, torch.t(U)) + 1e-9
         S = R / Z
         R = X * torch.matmul(S, W) - L * torch.matmul(S, V) - H * torch.matmul(S, U)
-        return R.detach().numpy()
+        return R.detach()
 
 
 class NextLinear(nn.Linear):
