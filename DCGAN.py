@@ -24,7 +24,7 @@ parser.add_argument('--nz', type=int, default=100, help='size of the latent z ve
 parser.add_argument('--ngf', type=int, default=64, help='number of generator filters in first layer')
 parser.add_argument('--ndf', type=int, default=64, help='number of discriminator filters in first layer')
 parser.add_argument('--epochs', type=int, default=25, help='number of epochs to train for')
-parser.add_argument('--outf', default='/output', help='folder to output images and model checkpoints')
+parser.add_argument('--outf', default='output', help='folder to output images and model checkpoints')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--imageSize', type=int, default=64)
 parser.add_argument('--loadG', default='', help='path to generator (to continue training')
