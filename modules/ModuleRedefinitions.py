@@ -426,7 +426,7 @@ class RelevanceNet(nn.Sequential):
         return input
 
     def relprop(self):
-        R = self.relevanceOutput
+        R = self.relevanceOutput.clone()
         # For all layers except the last
         for layer in self[-2::-1]:
             R = layer.relprop(R)

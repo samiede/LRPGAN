@@ -254,6 +254,7 @@ for epoch in range(opt.epochs):
         if n_batch % 100 == 0:
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
+
             # set ngpu to one, so relevance propagation works
             if (opt.ngpu > 1):
                 discriminator.setngpu(1)
@@ -271,7 +272,7 @@ for epoch in range(opt.epochs):
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             logger.log_images(
-                test_fake.data, test_relevance, 1,
+                test_fake.detach(), test_relevance, 1,
                 epoch, n_batch, len(dataloader)
             )
 
@@ -279,5 +280,5 @@ for epoch in range(opt.epochs):
                                            prediction_real, prediction_fake)
 
     # do checkpointing
-    torch.save(discriminator.state_dict(), '%s/netG_epoch_%d.pth' % (outf, epoch))
-    torch.save(generator.state_dict(), '%s/netD_epoch_%d.pth' % (opt.outf, epoch))
+    torch.save(discriminator.state_dict(), '%s/generator_epoch_%d.pth' % (outf, epoch))
+    torch.save(generator.state_dict(), '%s/discriminator_epoch_%d.pth' % (outf, epoch))
