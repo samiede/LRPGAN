@@ -2,7 +2,7 @@ import torch
 from torch import nn, optim
 from torchvision import transforms, datasets
 from utils.utils import Logger
-from models.ModuleRedefinitions import RelevanceNet, Layer, LastLinear, ReLu as PropReLu, \
+from modules.ModuleRedefinitions import RelevanceNet, Layer, LastLinear, ReLu as PropReLu, \
     NextConvolution, FirstConvolution, Dropout
 
 
