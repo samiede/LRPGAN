@@ -89,7 +89,6 @@ class DiscriminatorNet(nn.Module):
             )
         )
 
-
         self.optimizer = optim.Adam(self.parameters(), lr=0.0002)
         self.loss = nn.BCELoss()
 
