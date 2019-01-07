@@ -332,6 +332,5 @@ for epoch in range(num_epochs):
             )
 
     # do checkpointing
-    print('%s/checkpoints/generator_epoch_%d.pth' % (outf, epoch))
     torch.save(discriminator.state_dict(), '%s/generator_epoch_%d.pth' % (checkpointdir, epoch))
     torch.save(generator.state_dict(), '%s/discriminator_epoch_%d.pth' % (checkpointdir, epoch))

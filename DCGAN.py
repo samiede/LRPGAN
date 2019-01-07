@@ -32,6 +32,7 @@ parser.add_argument('--loadD', default='', help='path to discriminator (to conti
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
+checkpointdir = '{}/{}'.format(outf, 'checkpoints')
 ngpu = int(opt.ngpu)
 ngf = int(opt.ngf)
 ndf = int(opt.ndf)
@@ -40,6 +41,7 @@ print(opt)
 
 try:
     os.makedirs(outf)
+    os.makedirs(checkpointdir)
 except OSError:
     pass
 
@@ -282,5 +284,5 @@ for epoch in range(opt.epochs):
                                            prediction_real, prediction_fake)
 
     # do checkpointing
-    torch.save(discriminator.state_dict(), '%s/checkpoints/generator_epoch_%d.pth' % (outf, epoch))
-    torch.save(generator.state_dict(), '%s/checkpoints/discriminator_epoch_%d.pth' % (outf, epoch))
+    torch.save(discriminator.state_dict(), '%s/generator_epoch_%d.pth' % (checkpointdir, epoch))
+    torch.save(generator.state_dict(), '%s/discriminator_epoch_%d.pth' % (checkpointdir, epoch))
