@@ -307,7 +307,7 @@ for epoch in range(num_epochs):
             # test_relevance = discriminator.relprop()
             #
             # test_relevance = vectors_to_images(test_relevance)
-            # test_fake = vectors_to_images(test_fake)
+            test_fake = vectors_to_images(test_fake)
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
