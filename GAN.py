@@ -316,7 +316,6 @@ for epoch in range(num_epochs):
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            print(test_relevance)
 
 
             logger.log_images(
