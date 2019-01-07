@@ -247,7 +247,7 @@ generator = GeneratorNet().to(gpu)
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002)
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002)
 
-loss = nn.BCELoss()
+loss = nn.BCELoss().to(gpu)
 
 num_test_samples = 1
 test_noise = noise(num_test_samples)

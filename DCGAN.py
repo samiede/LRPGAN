@@ -196,7 +196,7 @@ if opt.loadD != '':
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
-loss = nn.BCELoss()
+loss = nn.BCELoss().to(gpu)
 
 # init fixed noise
 
