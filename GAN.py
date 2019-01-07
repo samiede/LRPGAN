@@ -241,8 +241,8 @@ def train_generator(optimizer, fake_data_):
 # Num Batches
 num_batches = len(dataloader)
 
-discriminator = DiscriminatorNet()
-generator = GeneratorNet()
+discriminator = DiscriminatorNet().to(gpu)
+generator = GeneratorNet().to(gpu)
 
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002)
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002)
