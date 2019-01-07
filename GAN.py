@@ -41,6 +41,10 @@ print(opt)
 
 try:
     os.makedirs(outf)
+except OSError:
+    pass
+
+try:
     os.makedirs(checkpointdir)
 except OSError:
     pass
