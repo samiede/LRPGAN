@@ -112,7 +112,7 @@ class DiscriminatorNet(nn.Module):
     A three hidden-layer discriminative neural network
     """
 
-    def __init__(self):
+    def __init__(self, ngpu):
         super(DiscriminatorNet, self).__init__()
         self.ngpu = ngpu
 
@@ -120,20 +120,27 @@ class DiscriminatorNet(nn.Module):
         n_features = 784
         n_out = 1
         self.net = nnrd.RelevanceNet(
-            nnrd.FirstLinear(n_features, 1024),
-            nnrd.ReLu(),
-            nnrd.Dropout(0.3),
+            nnrd.Layer(
+                nnrd.FirstLinear(n_features, 1024),
+                nnrd.ReLu(),
+                nnrd.Dropout(0.3)
+            ),
 
-            nnrd.NextLinear(1024, 512),
-            nnrd.ReLu(),
-            nnrd.Dropout(0.3),
+            nnrd.Layer(
+                nnrd.NextLinear(1024, 512),
+                nnrd.ReLu(),
+                nnrd.Dropout(0.3),
+            ),
 
-            nnrd.NextLinear(512, 256),
-            nnrd.ReLu(),
-            nnrd.Dropout(0.3),
-
-            nnrd.NextLinear(256, n_out),
-            nn.Sigmoid()
+            nnrd.Layer(
+                nnrd.NextLinear(512, 256),
+                nnrd.ReLu(),
+                nnrd.Dropout(0.3),
+            ),
+            nnrd.Layer(
+                nnrd.NextLinear(256, n_out),
+                nn.Sigmoid()
+            )
 
         )
 
@@ -156,10 +163,11 @@ class GeneratorNet(nn.Module):
     A three hidden-layer generative neural network
     """
 
-    def __init__(self):
+    def __init__(self, ngpu):
         super(GeneratorNet, self).__init__()
         n_features = 100
         n_out = 784
+        self.ngpu = ngpu
 
         self.net = nn.Sequential(
             nn.Linear(n_features, 256),
@@ -236,8 +244,8 @@ def train_generator(optimizer, fake_data_):
 # Num Batches
 num_batches = len(dataloader)
 
-discriminator = DiscriminatorNet().to(gpu)
-generator = GeneratorNet().to(gpu)
+discriminator = DiscriminatorNet(opt.ngpu).to(gpu)
+generator = GeneratorNet(opt.ngpu).to(gpu)
 
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002)
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002)
@@ -304,9 +312,12 @@ for epoch in range(num_epochs):
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)
+            discriminator.train()
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            print(test_relevance)
+
 
             logger.log_images(
                 test_fake.detach(), test_relevance, 1,
