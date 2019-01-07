@@ -195,7 +195,6 @@ def visualize(x, colormap):
     N = len(x)
     assert (N <= 16)
     x = colormap(x / np.abs(x).max())
-    print(x.shape)
 
     # Create a mosaic and upsample
     x = x.reshape([N, x.shape[2], x.shape[3], 3])

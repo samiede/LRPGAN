@@ -161,32 +161,27 @@ class GeneratorNet(nn.Module):
         n_features = 100
         n_out = 784
 
-        self.hidden0 = nn.Sequential(
+        self.net = nn.Sequential(
             nn.Linear(n_features, 256),
-            nn.LeakyReLU(0.2)
-        )
+            nn.LeakyReLU(0.2),
 
-        self.hidden1 = nn.Sequential(
             nn.Linear(256, 512),
-            nn.LeakyReLU(0.2)
-        )
+            nn.LeakyReLU(0.2),
 
-        self.hidden2 = nn.Sequential(
             nn.Linear(512, 1024),
-            nn.LeakyReLU(0.2)
-        )
+            nn.LeakyReLU(0.2),
 
-        self.out = nn.Sequential(
             nn.Linear(1024, n_out),
             nn.Tanh()
         )
 
-        self.layers = [self.hidden0, self.hidden1, self.hidden2, self.out]
 
     def forward(self, x):
-        for layer in self.layers:
-            x = layer(x)
-        return x
+        if x.is_cuda and self.ngpu > 1:
+            output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
+        else:
+            output = self.net(x)
+        return output
 
 
 # Network Functions
@@ -262,8 +257,9 @@ d_steps = 1
 num_epochs = 200
 
 for epoch in range(num_epochs):
-    print(epoch)
     for n_batch, (real_batch, _) in enumerate(dataloader):
+        print('Batch', n_batch, end='\r')
+
         N = real_batch.size(0)
 
         # 1. Train Discriminator
