@@ -274,6 +274,8 @@ class LeakyReLU(nn.LeakyReLU):
 class BatchNorm2d(nn.BatchNorm2d):
 
     def relprop(self, R):
+        return R
+        # Incorporate batch norm again
         return R, self.getParams()
 
     def getParams(self):
@@ -427,7 +429,6 @@ class RelevanceNet(nn.Sequential):
 
     def relprop(self):
         R = self.relevanceOutput.clone()
-        print('Relevance output', R)
         # For all layers except the last
         for layer in self[-2::-1]:
             R = layer.relprop(R)

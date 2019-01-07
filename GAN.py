@@ -122,19 +122,19 @@ class DiscriminatorNet(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstLinear(n_features, 1024),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
                 nnrd.Dropout(0.3)
             ),
 
             nnrd.Layer(
                 nnrd.NextLinear(1024, 512),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
                 nnrd.Dropout(0.3),
             ),
 
             nnrd.Layer(
                 nnrd.NextLinear(512, 256),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
                 nnrd.Dropout(0.3),
             ),
             nnrd.Layer(
@@ -304,10 +304,10 @@ for epoch in range(num_epochs):
             # eval needs to be set so batch norm works with batch size of 1
             discriminator.eval()
             test_result = discriminator(test_fake)
-            test_relevance = discriminator.relprop()
-
-            test_relevance = vectors_to_images(test_relevance)
-            test_fake = vectors_to_images(test_fake)
+            # test_relevance = discriminator.relprop()
+            #
+            # test_relevance = vectors_to_images(test_relevance)
+            # test_fake = vectors_to_images(test_fake)
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
@@ -315,11 +315,11 @@ for epoch in range(num_epochs):
             discriminator.train()
 
             # Add up relevance of all color channels
-            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
 
             logger.log_images(
-                test_fake.detach(), test_relevance, 1,
+                test_fake.detach(), test_fake.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
 
@@ -328,3 +328,7 @@ for epoch in range(num_epochs):
                 epoch, num_epochs, n_batch, num_batches,
                 d_error, g_error, d_pred_real, d_pred_fake
             )
+
+    # do checkpointing
+    torch.save(discriminator.state_dict(), '%s/checkpoints/generator_epoch_%d.pth' % (outf, epoch))
+    torch.save(generator.state_dict(), '%s/checkpoints/discriminator_epoch_%d.pth' % (outf, epoch))

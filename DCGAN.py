@@ -280,5 +280,5 @@ for epoch in range(opt.epochs):
                                            prediction_real, prediction_fake)
 
     # do checkpointing
-    torch.save(discriminator.state_dict(), '%s/generator_epoch_%d.pth' % (outf, epoch))
-    torch.save(generator.state_dict(), '%s/discriminator_epoch_%d.pth' % (outf, epoch))
+    torch.save(discriminator.state_dict(), '%s/checkpoints/generator_epoch_%d.pth' % (outf, epoch))
+    torch.save(generator.state_dict(), '%s/checkpoints/discriminator_epoch_%d.pth' % (outf, epoch))
