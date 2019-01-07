@@ -267,11 +267,11 @@ for epoch in range(num_epochs):
         N = real_batch.size(0)
 
         # 1. Train Discriminator
-        real_data = images_to_vectors(real_batch)
+        real_data = images_to_vectors(real_batch).to(gpu)
 
         # Generate fake data and detach
         # (so gradients are not calculated for generator)
-        fake_data = generator(noise(N)).detach()
+        fake_data = generator(noise(N)).to(gpu).detach()
 
         # Train Discriminator
         d_error, d_pred_real, d_pred_fake = train_discriminator(d_optimizer, real_data, fake_data)
@@ -279,7 +279,7 @@ for epoch in range(num_epochs):
         # 2. Train Generator
 
         # Generate fake data
-        fake_data = generator(noise(N))
+        fake_data = generator(noise(N)).to(gpu)
 
         # Train Generator
         g_error = train_generator(g_optimizer, fake_data)
