@@ -239,7 +239,7 @@ print('Created Logger')
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
-        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, len(dataloader) * 1 / 4 * opt.epochs)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, 2000)
 
         ############################
         # (1) Update Discriminator: maximize log(D(x)) + log(1 - D(G(z)))
@@ -297,7 +297,7 @@ for epoch in range(opt.epochs):
             # eval needs to be set so batch norm works with batch size of 1
             # discriminator.eval()
             test_result = discriminator(test_fake)
-            # test_relevance = discriminator.relprop()
+            test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
@@ -308,7 +308,7 @@ for epoch in range(opt.epochs):
             # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             logger.log_images(
-                test_fake.detach(), test_fake.detach(), 1,
+                test_fake.detach(), test_relevance.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
 
