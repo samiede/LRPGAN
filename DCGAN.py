@@ -267,7 +267,7 @@ for epoch in range(opt.epochs):
 
         logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
-        if n_batch % 100 == 0:
+        if n_batch % 1 == 0:
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
 
@@ -276,14 +276,14 @@ for epoch in range(opt.epochs):
                 discriminator.setngpu(1)
 
             # eval needs to be set so batch norm works with batch size of 1
-            discriminator.eval()
+            # discriminator.eval()
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)
-            discriminator.train()
+            # discriminator.train()
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
