@@ -267,7 +267,7 @@ for epoch in range(opt.epochs):
 
         logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
-        if n_batch % 1 == 0:
+        if n_batch % 100 == 0:
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
 
