@@ -274,7 +274,8 @@ class LeakyReLU(nn.LeakyReLU):
 class BatchNorm2d(nn.BatchNorm2d):
 
     def relprop(self, R):
-        return R, self.getParams()
+        # return R, self.getParams()
+        return R
 
     def getParams(self):
         return {'gamma': copy.deepcopy(self.weight), 'var': copy.deepcopy(self.running_var),

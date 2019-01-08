@@ -155,25 +155,25 @@ class DiscriminatorNet(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
                 nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 2),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 4),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 8),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
@@ -278,7 +278,7 @@ for epoch in range(opt.epochs):
             # eval needs to be set so batch norm works with batch size of 1
             # discriminator.eval()
             test_result = discriminator(test_fake)
-            test_relevance = discriminator.relprop()
+            # test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
@@ -286,10 +286,10 @@ for epoch in range(opt.epochs):
             # discriminator.train()
 
             # Add up relevance of all color channels
-            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             logger.log_images(
-                test_fake.detach(), test_relevance, 1,
+                test_fake.detach(), test_fake.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
 
