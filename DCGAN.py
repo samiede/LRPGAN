@@ -186,8 +186,10 @@ class DiscriminatorNet(nn.Module):
                 nnrd.ReLu(),
             ),
             # state size. (ndf*8) x 4 x 4
-            nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
-            nn.Sigmoid()
+            nnrd.Layer(
+                nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
+                nn.Sigmoid()
+            )
         )
 
     def forward(self, x):
@@ -288,21 +290,21 @@ for epoch in range(opt.epochs):
 
         if n_batch % 100 == 0:
             # generate fake with fixed noise
-            test_fake = generator(fixed_noise)
+            test_fake = generator(fixed_noise.detach())
 
             # set ngpu to one, so relevance propagation works
             if (opt.ngpu > 1):
                 discriminator.setngpu(1)
 
             # eval needs to be set so batch norm works with batch size of 1
-            # discriminator.eval()
-            test_result = discriminator(test_fake)
+            discriminator.eval()
+            test_result = discriminator(test_fake.detach())
             test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)
-            # discriminator.train()
+            discriminator.train()
 
             # Add up relevance of all color channels
             # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
