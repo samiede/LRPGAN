@@ -81,6 +81,16 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
 
 # misc. helper functions
 
+def added_gaussian(ins, stddev):
+    if stddev > 0:
+        return ins + torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
+    return ins
+
+
+def adjust_variance(variance, initial_variance, num_updates):
+    return max(variance - initial_variance / num_updates, 0)
+
+
 def discriminator_target(size):
     """
     Tensor containing soft labels, with shape = size
@@ -155,25 +165,25 @@ class DiscriminatorNet(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
-                nn.LeakyReLU(0.2),
+                nnrd.ReLu(),
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
                 nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 2),
-                nn.LeakyReLU(0.2),
+                nnrd.ReLu(),
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 4),
-                nn.LeakyReLU(0.2),
+                nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 8),
-                nn.LeakyReLU(0.2),
+                nnrd.ReLu(),
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
@@ -216,6 +226,10 @@ loss = nn.BCELoss().to(gpu)
 
 fixed_noise = torch.randn(1, nz, 1, 1, device=gpu)
 
+# Additive noise to stabilize Training for DCGAN
+initial_additive_noise_var = 0.1
+add_noise_var = 0.1
+
 # Create Logger instance
 logger = Logger(model_name='LRPGAN', data_name=opt.dataset, dir_name=outf)
 print('Created Logger')
@@ -224,8 +238,8 @@ print('Created Logger')
 
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
-        print('Batch', n_batch, end='\r')
         batch_size = batch_data.size(0)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, len(dataloader) * 1 / 4 * opt.epochs)
 
         ############################
         # (1) Update Discriminator: maximize log(D(x)) + log(1 - D(G(z)))
@@ -235,6 +249,8 @@ for epoch in range(opt.epochs):
         real_data = batch_data.to(gpu)
         label_real = discriminator_target(batch_size).to(gpu)
 
+        # Add noise to input
+        real_data = added_gaussian(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
@@ -244,6 +260,9 @@ for epoch in range(opt.epochs):
         noise = torch.randn(batch_size, nz, 1, 1, device=gpu)
         fake = generator(noise)
         label_fake = generator_target(batch_size).to(gpu)
+
+        # Add noise to fake data
+        fake = added_gaussian(fake, add_noise_var)
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
         d_err_fake.backward()
