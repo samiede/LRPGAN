@@ -392,7 +392,7 @@ class Pooling(nn.AvgPool2d):
         S = R / Z
         C = torch.autograd.grad(Z, self.X, S)[0]
         R = self.X * C
-        return R
+        return R.detach()
 
 
 class ReshapeLayer(nn.Module):

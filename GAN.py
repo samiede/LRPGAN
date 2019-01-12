@@ -125,26 +125,26 @@ class DiscriminatorNet(nn.Module):
         # All attributes are automatically assigned to the modules parameter list
         n_features = 784
         n_out = 1
-        self.net = nnrd.RelevanceNet(
-            nnrd.Layer(
-                nnrd.FirstLinear(n_features, 1024),
+        self.net = nn.Sequential(
+            nn.Sequential(
+                nn.Linear(n_features, 1024),
                 nn.LeakyReLU(0.2),
-                nnrd.Dropout(0.3)
+                nn.Dropout(0.3)
             ),
 
-            nnrd.Layer(
-                nnrd.NextLinear(1024, 512),
+            nn.Sequential(
+                nn.Linear(1024, 512),
                 nn.LeakyReLU(0.2),
-                nnrd.Dropout(0.3),
+                nn.Dropout(0.3),
             ),
 
-            nnrd.Layer(
-                nnrd.NextLinear(512, 256),
+            nn.Sequential(
+                nn.Linear(512, 256),
                 nn.LeakyReLU(0.2),
-                nnrd.Dropout(0.3),
+                nn.Dropout(0.3),
             ),
-            nnrd.Layer(
-                nnrd.NextLinear(256, n_out),
+            nn.Sequential(
+                nn.Linear(256, n_out),
                 nn.Sigmoid()
             )
 
