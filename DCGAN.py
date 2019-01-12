@@ -15,6 +15,8 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import modules.ModuleRedefinitions as nnrd
 from utils.utils import Logger
+from subprocess import call
+
 
 # add parameters
 parser = argparse.ArgumentParser()
@@ -165,25 +167,25 @@ class DiscriminatorNet(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
-                nnrd.ReLu(),
+                nn.LeakyReLU(),
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
                 nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 2),
-                nnrd.ReLu(),
+                nn.LeakyReLU(),
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 4),
-                nnrd.ReLu(),
+                nn.LeakyReLU(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 8),
-                nnrd.ReLu(),
+                nn.LeakyReLU(),
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.Layer(
@@ -330,10 +332,12 @@ for epoch in range(opt.epochs):
             # Add up relevance of all color channels
             # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
-            logger.log_images(
+            img_name = logger.log_images(
                 test_fake.detach(), test_fake.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
+            call(['imgcat', outf + '/' + img_name])
+
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)
