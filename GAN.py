@@ -18,7 +18,7 @@ from utils.utils import Logger
 
 # add parameters
 parser = argparse.ArgumentParser()
-parser.add_argument('--batchSize', type=int, default=64, help='input batch size')
+parser.add_argument('--batchSize', type=int, default=100, help='input batch size')
 parser.add_argument('--dataset', help='mnist', default='mnist')
 parser.add_argument('--nz', type=int, default=100, help='size of the latent z vector')
 parser.add_argument('--ngf', type=int, default=64, help='number of generator filters in first layer')
@@ -66,7 +66,7 @@ if opt.dataset == 'mnist':
                              transform=transforms.Compose(
                                  [
                                      transforms.ToTensor(),
-                                     transforms.Normalize((0.5,), (0.5,)),
+                                     transforms.Normalize((0.5, .5, .5), (0.5, 0.5, 0.5)),
                                  ]
                              ))
 else:
@@ -78,8 +78,9 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
 
 
 def images_to_vectors(images):
-    return images.view(images.size(0), 784)
-
+    images = images.view(images.size(0), 784)
+    images.requires_grad = True
+    return images
 
 def vectors_to_images(vectors):
     return vectors.view(vectors.size(0), 1, 28, 28)
@@ -91,7 +92,7 @@ def noise(size):
     Generates a 1-d vector of gaussian sampled random values
     """
     # noinspection PyUnresolvedReferences
-    z = torch.randn((size, 100))
+    z = torch.randn((size, 100), requires_grad=True)
     return z
 
 
