@@ -91,14 +91,14 @@ class FirstConvolution(nn.Conv2d):
 
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
-            iself.X = copy.deepcopy(self.X)
+            iself.X = self.X.clone()
             # Include positive biases as neurons
             iself_biases = copy.deepcopy(iself.bias.data)
             iself.bias.data *= 0
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
-            nself.X = copy.deepcopy(self.X)
+            nself.X = self.X.clone()
 
             # Include positive biases as neurons
             nself_biases = copy.deepcopy(nself.bias.data)
@@ -107,7 +107,7 @@ class FirstConvolution(nn.Conv2d):
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
-            pself.X = copy.deepcopy(self.X)
+            pself.X = self.X.clone()
 
             # Include positive biases as neurons
             pself_biases = copy.deepcopy(pself.bias.data)
@@ -220,7 +220,7 @@ class NextConvolution(nn.Conv2d):
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
-            pself.X = copy.deepcopy(self.X)
+            pself.X = self.X.clone()
             # Include positive biases as neurons
             pself_biases = copy.deepcopy(pself.bias.data)
             pself.bias.data *= 0
@@ -228,7 +228,7 @@ class NextConvolution(nn.Conv2d):
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
-            nself.X = copy.deepcopy(self.X)
+            nself.X = self.X.clone()
             # Include positive biases as neurons
             nself_biases = copy.deepcopy(pself.bias.data)
             nself.bias.data *= 0
