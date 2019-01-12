@@ -117,7 +117,7 @@ def weights_init(m):
     if classname.find('Conv') != -1:
         m.weight.data.normal_(0.0, 0.02)
     elif classname.find('BatchNorm') != -1:
-        m.weight.data.normal_(0.0, 0.02)
+        m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
 
 
@@ -129,19 +129,19 @@ class GeneratorNet(nn.Module):
 
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(ngf * 8),
-            nn.ReLU(),
+            nn.ReLU(True),
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ngf * 4),
-            nn.ReLU(),
+            nn.ReLU(True),
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ngf * 2),
-            nn.ReLU(),
+            nn.ReLU(True),
             # state size. (ngf*2) x 16 x 16
             nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ngf),
-            nn.ReLU(),
+            nn.ReLU(True),
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False),
             nn.Tanh()
@@ -162,34 +162,54 @@ class DiscriminatorNet(nn.Module):
         super(DiscriminatorNet, self).__init__()
 
         self.ngpu = ngpu
-        self.net = nnrd.RelevanceNet(
-            nnrd.Layer(
-                nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
-                nnrd.ReLu(),
-            ),
+        # self.net = nnrd.RelevanceNet(
+        #     nnrd.Layer(
+        #         nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
+        #         nnrd.ReLu(),
+        #     ),
+        #     # state size. (ndf) x 32 x 32
+        #     nnrd.Layer(
+        #         nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
+        #         nnrd.BatchNorm2d(ndf * 2),
+        #         nnrd.ReLu(),
+        #     ),
+        #     # state size. (ndf*2) x 16 x 16
+        #     nnrd.Layer(
+        #         nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
+        #         nnrd.BatchNorm2d(ndf * 4),
+        #         nnrd.ReLu(),
+        #     ),
+        #     # state size. (ndf*4) x 8 x 8
+        #     nnrd.Layer(
+        #         nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
+        #         nnrd.BatchNorm2d(ndf * 8),
+        #         nnrd.ReLu(),
+        #     ),
+        #     # state size. (ndf*8) x 4 x 4
+        #     nnrd.Layer(
+        #         nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
+        #         nn.Sigmoid()
+        #     )
+        # )
+        self.net = nn.Sequential(
+            # input is (nc) x 64 x 64
+            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf) x 32 x 32
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
-                nnrd.BatchNorm2d(ndf * 2),
-                nnrd.ReLu(),
-            ),
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*2) x 16 x 16
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
-                nnrd.BatchNorm2d(ndf * 4),
-                nnrd.ReLu(),
-            ),
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*4) x 8 x 8
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
-                nnrd.BatchNorm2d(ndf * 8),
-                nnrd.ReLu(),
-            ),
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*8) x 4 x 4
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
-                nn.Sigmoid()
-            )
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -198,6 +218,7 @@ class DiscriminatorNet(nn.Module):
             output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
         else:
             output = self.net(x)
+
         return output.view(-1, 1).squeeze(1)
 
     def relprop(self):
@@ -222,7 +243,7 @@ if opt.loadD != '':
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
-loss = nn.BCELoss().to(gpu)
+loss = nn.BCELoss()
 
 # init fixed noise
 
@@ -241,7 +262,7 @@ print('Created Logger')
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
-        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1/4)
+        # add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1/4)
 
         ############################
         # (1) Update Discriminator: maximize log(D(x)) + log(1 - D(G(z)))
@@ -252,7 +273,7 @@ for epoch in range(opt.epochs):
         label_real = discriminator_target(batch_size).to(gpu)
 
         # Add noise to input
-        real_data = added_gaussian(real_data, add_noise_var)
+        # real_data = added_gaussian(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
@@ -264,7 +285,7 @@ for epoch in range(opt.epochs):
         label_fake = generator_target(batch_size).to(gpu)
 
         # Add noise to fake data
-        fake = added_gaussian(fake, add_noise_var)
+        # fake = added_gaussian(fake, add_noise_var)
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
         d_err_fake.backward()
@@ -290,27 +311,27 @@ for epoch in range(opt.epochs):
 
         if n_batch % 100 == 0:
             # generate fake with fixed noise
-            test_fake = generator(fixed_noise.detach())
+            test_fake = generator(fixed_noise)
 
             # set ngpu to one, so relevance propagation works
-            if (opt.ngpu > 1):
-                discriminator.setngpu(1)
+            # if (opt.ngpu > 1):
+            #     discriminator.setngpu(1)
 
             # eval needs to be set so batch norm works with batch size of 1
-            discriminator.eval()
-            test_result = discriminator(test_fake)
-            test_relevance = discriminator.relprop()
+            # discriminator.eval()
+            # test_result = discriminator(test_fake)
+            # test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
-            if (opt.ngpu > 1):
-                discriminator.setngpu(opt.ngpu)
-            discriminator.train()
+            # if (opt.ngpu > 1):
+            #     discriminator.setngpu(opt.ngpu)
+            # discriminator.train()
 
             # Add up relevance of all color channels
             # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             logger.log_images(
-                test_fake.detach(), test_relevance.detach(), 1,
+                test_fake.detach(), test_fake.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
 
@@ -318,5 +339,5 @@ for epoch in range(opt.epochs):
                                            prediction_real, prediction_fake)
 
     # do checkpointing
-    torch.save(discriminator.state_dict(), '%s/generator_epoch_%d.pth' % (checkpointdir, epoch))
-    torch.save(generator.state_dict(), '%s/discriminator_epoch_%d.pth' % (checkpointdir, epoch))
+    torch.save(discriminator.state_dict(), '%s/generator.pth' % (checkpointdir))
+    torch.save(generator.state_dict(), '%s/discriminator.pth' % (checkpointdir))
