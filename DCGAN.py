@@ -336,7 +336,8 @@ for epoch in range(opt.epochs):
                 test_fake.detach(), test_fake.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
-            call(['imgcat', outf + '/' + img_name])
+            # print(outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png')
+            # call(['imgcat', outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
 
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,

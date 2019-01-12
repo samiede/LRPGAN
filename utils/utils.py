@@ -86,7 +86,6 @@ class Logger:
         # Save plots
         self.save_torch_images(horizontal_grid, grid, epoch, n_batch)
 
-        return img_name
 
     def save_torch_images(self, horizontal_grid, grid, epoch, n_batch, plot_horizontal=True):
         out_dir = '{}'.format(self.data_subdir)
