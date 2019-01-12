@@ -15,7 +15,7 @@ class FirstConvolution(nn.Conv2d):
 
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
-        self.X = copy.deepcopy(input)
+        self.X = input.clone()
         return super().forward(input)
 
     def relprop(self, R):
@@ -159,7 +159,7 @@ class NextConvolution(nn.Conv2d):
 
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
-        self.X = copy.deepcopy(input)
+        self.X = input.clone()
         return super().forward(input)
 
     def relprop(self, R):
