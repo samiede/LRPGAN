@@ -190,6 +190,8 @@ class DiscriminatorNet(nn.Module):
             # state size. (ndf*8) x 4 x 4
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
+            ),
+            nnrd.Layer(
                 nn.Sigmoid()
             )
         )
@@ -314,6 +316,10 @@ for epoch in range(opt.epochs):
         if n_batch % 100 == 0:
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
+
+            # TODO:
+            # - try: test_fake = test_fake.detach()
+            #        test_fake.requires_grad = True
 
             # set ngpu to one, so relevance propagation works
             # if (opt.ngpu > 1):
