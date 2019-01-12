@@ -15,7 +15,7 @@ class FirstConvolution(nn.Conv2d):
 
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
-        self.X = input
+        self.X = copy.deepcopy(input)
         return super().forward(input)
 
     def relprop(self, R):
@@ -91,12 +91,15 @@ class FirstConvolution(nn.Conv2d):
 
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
+            iself.X = copy.deepcopy(self.X)
             # Include positive biases as neurons
             iself_biases = copy.deepcopy(iself.bias.data)
             iself.bias.data *= 0
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
+            nself.X = copy.deepcopy(self.X)
+
             # Include positive biases as neurons
             nself_biases = copy.deepcopy(nself.bias.data)
             nself.bias.data *= 0
@@ -104,6 +107,8 @@ class FirstConvolution(nn.Conv2d):
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
+            pself.X = copy.deepcopy(self.X)
+
             # Include positive biases as neurons
             pself_biases = copy.deepcopy(pself.bias.data)
             pself.bias.data *= 0
@@ -154,7 +159,7 @@ class NextConvolution(nn.Conv2d):
 
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
-        self.X = input
+        self.X = copy.deepcopy(input)
         return super().forward(input)
 
     def relprop(self, R):
@@ -215,6 +220,7 @@ class NextConvolution(nn.Conv2d):
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
+            pself.X = copy.deepcopy(self.X)
             # Include positive biases as neurons
             pself_biases = copy.deepcopy(pself.bias.data)
             pself.bias.data *= 0
@@ -222,29 +228,31 @@ class NextConvolution(nn.Conv2d):
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
+            nself.X = copy.deepcopy(self.X)
             # Include positive biases as neurons
             nself_biases = copy.deepcopy(pself.bias.data)
             nself.bias.data *= 0
             nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
-            X = pself.X + 1e-9
+            pX = pself.X + 1e-9
+            nX = nself.X + 1e-9
 
-            ZA = pself(X)
+            ZA = pself(pX)
             # expand biases for addition
             pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(ZA)
             ZA = ZA + pself_biases
             SA = pself.alpha * torch.div(R, ZA)
 
-            ZB = nself(X)
+            ZB = nself(nX)
             # expand biases for addition HERE NEGATIVE BIASES? torch.min???
             nself_biases = torch.min(torch.Tensor(1).zero_(), nself_biases).unsqueeze(0).unsqueeze(2).unsqueeze(
                 3).expand_as(ZB)
             ZB = ZB + nself_biases
             SB = - nself.beta * torch.div(R, ZB)
 
-            C = torch.autograd.grad(ZA, X, SA)[0] + torch.autograd.grad(ZB, X, SB)[0]
-            R = X * C
+            C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
+            R = pX * C
 
         return R.detach()
 
