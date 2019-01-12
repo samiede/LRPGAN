@@ -162,55 +162,55 @@ class DiscriminatorNet(nn.Module):
         super(DiscriminatorNet, self).__init__()
 
         self.ngpu = ngpu
-        # self.net = nnrd.RelevanceNet(
-        #     nnrd.Layer(
-        #         nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
-        #         nnrd.ReLu(),
-        #     ),
-        #     # state size. (ndf) x 32 x 32
-        #     nnrd.Layer(
-        #         nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
-        #         nnrd.BatchNorm2d(ndf * 2),
-        #         nnrd.ReLu(),
-        #     ),
-        #     # state size. (ndf*2) x 16 x 16
-        #     nnrd.Layer(
-        #         nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
-        #         nnrd.BatchNorm2d(ndf * 4),
-        #         nnrd.ReLu(),
-        #     ),
-        #     # state size. (ndf*4) x 8 x 8
-        #     nnrd.Layer(
-        #         nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
-        #         nnrd.BatchNorm2d(ndf * 8),
-        #         nnrd.ReLu(),
-        #     ),
-        #     # state size. (ndf*8) x 4 x 4
-        #     nnrd.Layer(
-        #         nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
-        #         nn.Sigmoid()
-        #     )
-        # )
-        self.net = nn.Sequential(
-            # input is (nc) x 64 x 64
-            nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+        self.net = nnrd.RelevanceNet(
+            nnrd.Layer(
+                nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
+                nnrd.ReLu(),
+            ),
             # state size. (ndf) x 32 x 32
-            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 2),
-            nn.LeakyReLU(0.2, inplace=True),
+            nnrd.Layer(
+                nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
+                nnrd.BatchNorm2d(ndf * 2),
+                nnrd.ReLu(),
+            ),
             # state size. (ndf*2) x 16 x 16
-            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 4),
-            nn.LeakyReLU(0.2, inplace=True),
+            nnrd.Layer(
+                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
+                nnrd.BatchNorm2d(ndf * 4),
+                nnrd.ReLu(),
+            ),
             # state size. (ndf*4) x 8 x 8
-            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf * 8),
-            nn.LeakyReLU(0.2, inplace=True),
+            nnrd.Layer(
+                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
+                nnrd.BatchNorm2d(ndf * 8),
+                nnrd.ReLu(),
+            ),
             # state size. (ndf*8) x 4 x 4
-            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-            nn.Sigmoid()
+            nnrd.Layer(
+                nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
+                nn.Sigmoid()
+            )
         )
+        # self.net = nn.Sequential(
+        #     # input is (nc) x 64 x 64
+        #     nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+        #     nn.LeakyReLU(0.2, inplace=True),
+        #     # state size. (ndf) x 32 x 32
+        #     nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+        #     nn.BatchNorm2d(ndf * 2),
+        #     nn.LeakyReLU(0.2, inplace=True),
+        #     # state size. (ndf*2) x 16 x 16
+        #     nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+        #     nn.BatchNorm2d(ndf * 4),
+        #     nn.LeakyReLU(0.2, inplace=True),
+        #     # state size. (ndf*4) x 8 x 8
+        #     nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+        #     nn.BatchNorm2d(ndf * 8),
+        #     nn.LeakyReLU(0.2, inplace=True),
+        #     # state size. (ndf*8) x 4 x 4
+        #     nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+        #     nn.Sigmoid()
+        # )
 
     def forward(self, x):
 
