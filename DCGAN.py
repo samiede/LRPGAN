@@ -321,7 +321,7 @@ for epoch in range(opt.epochs):
 
             # eval needs to be set so batch norm works with batch size of 1
             # discriminator.eval()
-            test_result = discriminator(test_fake.detach())
+            test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
