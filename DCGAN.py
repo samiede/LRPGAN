@@ -15,8 +15,7 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import modules.ModuleRedefinitions as nnrd
 from utils.utils import Logger
-from subprocess import call
-
+import subprocess
 
 # add parameters
 parser = argparse.ArgumentParser()
@@ -343,7 +342,7 @@ for epoch in range(opt.epochs):
                 epoch, n_batch, len(dataloader)
             )
             # print(outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png')
-            # call(['imgcat', outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
+            subprocess.call(['/Users/sami/.iterm2/imgcat', outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
 
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
