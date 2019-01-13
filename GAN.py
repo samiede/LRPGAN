@@ -342,5 +342,5 @@ for epoch in range(num_epochs):
             )
 
     # do checkpointing
-    torch.save(discriminator.state_dict(), '%s/generator.pth' % (checkpointdir, epoch))
-    torch.save(generator.state_dict(), '%s/discriminator.pth' % (checkpointdir, epoch))
+    torch.save(discriminator.state_dict(), '%s/generator.pth' % checkpointdir)
+    torch.save(generator.state_dict(), '%s/discriminator.pth' % checkpointdir)
