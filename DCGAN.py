@@ -170,27 +170,25 @@ class DiscriminatorNet(nn.Module):
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
+                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
+                nnrd.NextConvolution(ndf * 2, ndf * 4, 4,'2', 2, 1),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
+                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3' ,2, 1),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
-            ),
-            nnrd.Layer(
+                nnrd.NextConvolution(ndf * 8, 1, 4, '4', 1, 0),
                 nn.Sigmoid()
             )
         )
@@ -325,14 +323,13 @@ for epoch in range(opt.epochs):
             #     discriminator.setngpu(1)
 
             # eval needs to be set so batch norm works with batch size of 1
-            # discriminator.eval()
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
+            exit()
 
             # set ngpu back to opt.ngpu
             # if (opt.ngpu > 1):
             #     discriminator.setngpu(opt.ngpu)
-            # discriminator.train()
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
@@ -341,8 +338,9 @@ for epoch in range(opt.epochs):
                 test_fake.detach(), test_relevance.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
-            # print(outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png')
-            subprocess.call(['/Users/sami/.iterm2/imgcat', outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
+
+            # show images inline
+            subprocess.call([os.path.expanduser('~/.iterm2/imgcat'), outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
 
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,

@@ -112,7 +112,7 @@ class Logger:
     def _save_images(self, fig, epoch, n_batch, comment=''):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
-        fig.savefig('{}/{}_epoch_{}_batch_{}.png'.format(out_dir, comment, epoch, n_batch))
+        fig.savefig('{}/{}_epoch_{}_batch_{}.png'.format(out_dir, comment, epoch, n_batch), dpi=50)
 
     @staticmethod
     def display_status(epoch, num_epochs, n_batch, num_batches, d_error, g_error, d_pred_real, d_pred_fake):
