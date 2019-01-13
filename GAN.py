@@ -145,7 +145,7 @@ class DiscriminatorNet(nn.Module):
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
             ),
-            nn.Layer(
+            nnrd.Layer(
                 nnrd.NextLinear(256, n_out),
                 nn.Sigmoid()
             )
