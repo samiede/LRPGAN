@@ -137,6 +137,8 @@ class FirstConvolution(nn.Conv2d):
 
             R = X * iself_b - L * pself_b - H * nself_b
 
+        if len(R[R < 0]) != 0:
+            print('First', R[R < 0])
         return R.detach()
 
 
