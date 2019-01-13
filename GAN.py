@@ -327,7 +327,7 @@ for epoch in range(num_epochs):
 
 
             logger.log_images(
-                test_fake.detach(), test_fake.detach(), 1,
+                test_fake.detach(), test_relevance.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
 
