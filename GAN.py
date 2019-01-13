@@ -15,6 +15,7 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import modules.ModuleRedefinitions as nnrd
 from utils.utils import Logger
+import subprocess
 
 # add parameters
 parser = argparse.ArgumentParser()
@@ -126,26 +127,26 @@ class DiscriminatorNet(nn.Module):
         # All attributes are automatically assigned to the modules parameter list
         n_features = 784
         n_out = 1
-        self.net = nn.Sequential(
-            nn.Sequential(
-                nn.Linear(n_features, 1024),
-                nn.LeakyReLU(0.2),
-                nn.Dropout(0.3)
+        self.net = nnrd.RelevanceNet(
+            nnrd.Layer(
+                nnrd.FirstLinear(n_features, 1024),
+                nnrd.ReLu(),
+                nnrd.Dropout(0.3)
             ),
 
-            nn.Sequential(
-                nn.Linear(1024, 512),
-                nn.LeakyReLU(0.2),
-                nn.Dropout(0.3),
+            nnrd.Layer(
+                nnrd.NextLinear(1024, 512),
+                nnrd.ReLu(),
+                nnrd.Dropout(0.3),
             ),
 
-            nn.Sequential(
-                nn.Linear(512, 256),
-                nn.LeakyReLU(0.2),
-                nn.Dropout(0.3),
+            nnrd.Layer(
+                nnrd.NextLinear(512, 256),
+                nnrd.ReLu(),
+                nnrd.Dropout(0.3),
             ),
-            nn.Sequential(
-                nn.Linear(256, n_out),
+            nn.Layer(
+                nnrd.NextLinear(256, n_out),
                 nn.Sigmoid()
             )
 
@@ -309,9 +310,9 @@ for epoch in range(num_epochs):
                 discriminator.setngpu(1)
 
             # eval needs to be set so batch norm works with batch size of 1
-            discriminator.eval()
+            # discriminator.eval()
             test_result = discriminator(test_fake)
-            # test_relevance = discriminator.relprop()
+            test_relevance = discriminator.relprop()
             #
             # test_relevance = vectors_to_images(test_relevance)
             test_fake = vectors_to_images(test_fake)
@@ -319,7 +320,7 @@ for epoch in range(num_epochs):
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)
-            discriminator.train()
+            # discriminator.train()
 
             # Add up relevance of all color channels
             # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
