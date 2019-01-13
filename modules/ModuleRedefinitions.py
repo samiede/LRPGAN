@@ -250,8 +250,8 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
-
-        print('Elements', self.name, R[R < 0])
+        if len(R[R < 0]) != 0:
+            print('Elements', self.name, R[R < 0])
         return R.detach()
 
 
