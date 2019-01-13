@@ -176,13 +176,13 @@ class DiscriminatorNet(nn.Module):
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4,'2', 2, 1),
+                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3' ,2, 1),
+                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
             ),
@@ -339,8 +339,8 @@ for epoch in range(opt.epochs):
             )
 
             # show images inline
-            subprocess.call([os.path.expanduser('~/.iterm2/imgcat'), outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
-
+            subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
+                             outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)

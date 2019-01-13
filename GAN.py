@@ -330,6 +330,10 @@ for epoch in range(num_epochs):
                 epoch, n_batch, len(dataloader)
             )
 
+            # show images inline
+            subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
+                             outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
+
             # Display status Logs
             logger.display_status(
                 epoch, num_epochs, n_batch, num_batches,
@@ -337,5 +341,5 @@ for epoch in range(num_epochs):
             )
 
     # do checkpointing
-    torch.save(discriminator.state_dict(), '%s/generator_epoch_%d.pth' % (checkpointdir, epoch))
-    torch.save(generator.state_dict(), '%s/discriminator_epoch_%d.pth' % (checkpointdir, epoch))
+    torch.save(discriminator.state_dict(), '%s/generator.pth' % (checkpointdir, epoch))
+    torch.save(generator.state_dict(), '%s/discriminator.pth' % (checkpointdir, epoch))
