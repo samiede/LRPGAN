@@ -15,7 +15,7 @@ import PIL, PIL.Image
     TensorBoard Data will be stored in './runs' path
 '''
 
-lowest = -1.0
+lowest = 0.0
 highest = 1.0
 
 
