@@ -304,17 +304,17 @@ for epoch in range(opt.epochs):
 
             # eval needs to be set so batch norm works with batch size of 1
             test_result = discriminator(test_fake)
-            # test_relevance = discriminator.relprop()
+            test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
             # if (opt.ngpu > 1):
             #     discriminator.setngpu(opt.ngpu)
 
             # Add up relevance of all color channels
-            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             img_name = logger.log_images(
-                test_fake.detach(), test_fake.detach(), 1,
+                test_fake.detach(), test_relevance.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
 
