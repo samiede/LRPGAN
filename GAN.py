@@ -139,7 +139,11 @@ class DiscriminatorNet(nn.Module):
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
             ),
-
+            nnrd.Layer(
+                nnrd.NextLinear(512, 512),
+                nnrd.ReLu(),
+                nnrd.Dropout(0.3)
+            ),
             nnrd.Layer(
                 nnrd.NextLinear(512, 256),
                 nnrd.ReLu(),
@@ -179,13 +183,13 @@ class GeneratorNet(nn.Module):
 
         self.net = nn.Sequential(
             nn.Linear(n_features, 256),
-            nnrd.ReLu(),
+            nn.LeakyReLU(0.2),
 
             nn.Linear(256, 512),
-            nnrd.ReLu(),
+            nn.LeakyReLU(0.2),
 
             nn.Linear(512, 1024),
-            nnrd.ReLu(),
+            nn.LeakyReLU(0.2),
 
             nn.Linear(1024, n_out),
             nn.Tanh()
