@@ -170,25 +170,25 @@ class DiscriminatorNet(nn.Module):
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1),
+                nnrd.NextConvolution(ndf, ndf * 2, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1),
+                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1),
+                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, 2, 1),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 8, 1, 4, '4', 1, 0),
+                nnrd.NextConvolution(ndf * 8, 1, 4, 1, 0),
                 nn.Sigmoid()
             )
         )
@@ -284,10 +284,6 @@ for epoch in range(opt.epochs):
         d_fake_2 = prediction_fake_g.mean().item()
         g_optimizer.step()
 
-        print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
-              % (epoch, opt.epochs, n_batch, len(dataloader),
-                 d_error_total.item(), g_err.item(), d_real, d_fake_1, d_fake_2))
-
         logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
         if n_batch % 100 == 0:
@@ -317,6 +313,10 @@ for epoch in range(opt.epochs):
                 test_fake.detach(), test_relevance.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
+
+            print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
+                  % (epoch, opt.epochs, n_batch, len(dataloader),
+                     d_error_total.item(), g_err.item(), d_real, d_fake_1, d_fake_2))
 
             # show images inline
             subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
