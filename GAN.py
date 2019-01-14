@@ -320,7 +320,7 @@ for epoch in range(num_epochs):
             # eval needs to be set so batch norm works with batch size of 1
             # discriminator.eval()
             test_result = discriminator(test_fake)
-            # test_relevance = discriminator.relprop()
+            test_relevance = discriminator.relprop()
             #
             # test_relevance = vectors_to_images(test_relevance)
             test_fake = vectors_to_images(test_fake)
@@ -335,7 +335,7 @@ for epoch in range(num_epochs):
 
 
             logger.log_images(
-                test_fake.detach(), test_fake.detach(), 1,
+                test_fake.detach(), test_relevance.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
 
