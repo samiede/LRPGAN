@@ -130,19 +130,19 @@ class DiscriminatorNet(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstLinear(n_features, 1024),
-                nnrd.ReLu(),
+                nn.LeakyReLu(0.2),
                 nnrd.Dropout(0.3)
             ),
 
             nnrd.Layer(
                 nnrd.NextLinear(1024, 512),
-                nnrd.ReLu(),
+                nn.LeakyReLu(0.2),
                 nnrd.Dropout(0.3),
             ),
 
             nnrd.Layer(
                 nnrd.NextLinear(512, 256),
-                nnrd.ReLu(),
+                nn.LeakyReLu(0.2),
                 nnrd.Dropout(0.3),
             ),
             nnrd.Layer(
