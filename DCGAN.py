@@ -192,26 +192,6 @@ class DiscriminatorNet(nn.Module):
                 nn.Sigmoid()
             )
         )
-        # self.net = nn.Sequential(
-        #     # input is (nc) x 64 x 64
-        #     nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
-        #     nn.LeakyReLU(0.2, inplace=True),
-        #     # state size. (ndf) x 32 x 32
-        #     nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
-        #     nn.BatchNorm2d(ndf * 2),
-        #     nn.LeakyReLU(0.2, inplace=True),
-        #     # state size. (ndf*2) x 16 x 16
-        #     nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
-        #     nn.BatchNorm2d(ndf * 4),
-        #     nn.LeakyReLU(0.2, inplace=True),
-        #     # state size. (ndf*4) x 8 x 8
-        #     nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
-        #     nn.BatchNorm2d(ndf * 8),
-        #     nn.LeakyReLU(0.2, inplace=True),
-        #     # state size. (ndf*8) x 4 x 4
-        #     nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-        #     nn.Sigmoid()
-        # )
 
     def forward(self, x):
 
@@ -324,7 +304,7 @@ for epoch in range(opt.epochs):
 
             # eval needs to be set so batch norm works with batch size of 1
             test_result = discriminator(test_fake)
-            test_relevance = discriminator.relprop()
+            # test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
             # if (opt.ngpu > 1):
@@ -334,7 +314,7 @@ for epoch in range(opt.epochs):
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             img_name = logger.log_images(
-                test_fake.detach(), test_relevance.detach(), 1,
+                test_fake.detach(), test_fake.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
 
