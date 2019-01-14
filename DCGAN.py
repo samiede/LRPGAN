@@ -13,7 +13,7 @@ import torch.utils.data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
-import modules.ModuleRedefinitions as nnrd
+import modules.OldModules as nnrd
 from utils.utils import Logger
 import subprocess
 
