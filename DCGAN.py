@@ -311,7 +311,7 @@ for epoch in range(opt.epochs):
             #     discriminator.setngpu(opt.ngpu)
 
             # Add up relevance of all color channels
-            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
             img_name = logger.log_images(
                 test_fake.detach(), test_fake.detach(), 1,
