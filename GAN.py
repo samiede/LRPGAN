@@ -133,7 +133,11 @@ class DiscriminatorNet(nn.Module):
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3)
             ),
-
+            nnrd.Layer(
+                nnrd.NextLinear(1024, 1024),
+                nnrd.ReLu(),
+                nnrd.Dropout(0.3)
+            ),
             nnrd.Layer(
                 nnrd.NextLinear(1024, 512),
                 nnrd.ReLu(),
