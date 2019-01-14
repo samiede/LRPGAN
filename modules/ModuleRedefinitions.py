@@ -335,11 +335,12 @@ class NextLinear(nn.Linear):
         return super().forward(input)
 
     def relprop(self, R):
+        X = self.X.clone()
         V = torch.max(torch.Tensor(1).zero_(), self.weight)
-        Z = torch.matmul(self.X, torch.t(V)) + 1e-9
+        Z = torch.matmul(X, torch.t(V)) + 1e-9
         S = R / Z
         C = torch.matmul(S, V)
-        R = self.X * C
+        R = X * C
 
         return R
 
