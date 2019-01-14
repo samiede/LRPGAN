@@ -13,7 +13,7 @@ import torch.utils.data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
-import modules.OldModules as nnrd
+import modules.ModuleRedefinitions as nnrd
 from utils.utils import Logger
 import subprocess
 
@@ -286,6 +286,11 @@ for epoch in range(opt.epochs):
 
         logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
+        if n_batch % 10 == 0:
+            print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
+                  % (epoch, opt.epochs, n_batch, len(dataloader),
+                     d_error_total.item(), g_err.item(), d_real, d_fake_1, d_fake_2))
+
         if n_batch % 100 == 0:
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
@@ -313,10 +318,6 @@ for epoch in range(opt.epochs):
                 test_fake.detach(), test_relevance.detach(), 1,
                 epoch, n_batch, len(dataloader)
             )
-
-            print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
-                  % (epoch, opt.epochs, n_batch, len(dataloader),
-                     d_error_total.item(), g_err.item(), d_real, d_fake_1, d_fake_2))
 
             # show images inline
             subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),

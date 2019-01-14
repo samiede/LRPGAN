@@ -20,6 +20,9 @@ class FirstConvolution(nn.Conv2d):
 
     def relprop(self, R):
 
+
+        print('Beginning of First', len(R[R < 0]))
+
         if type(R) is tuple:
 
             R, params = R
