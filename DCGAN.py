@@ -108,7 +108,6 @@ def generator_target(size):
     """
     # noinspection PyUnresolvedReferences
     return torch.Tensor(size).zero_()
-    # return torch.Tensor(size).uniform_(0, 0.3)
 
 
 # init networks
@@ -243,10 +242,10 @@ print('Created Logger')
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
-        # add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1/4)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1/2)
 
         ############################
-        # (1) Update Discriminator: maximize log(D(x)) + log(1 - D(G(z)))
+        # Train Discriminator
         ###########################
         # train with real
         discriminator.zero_grad()
@@ -254,7 +253,7 @@ for epoch in range(opt.epochs):
         label_real = discriminator_target(batch_size).to(gpu)
 
         # Add noise to input
-        # real_data = added_gaussian(real_data, add_noise_var)
+        real_data = added_gaussian(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
@@ -266,7 +265,7 @@ for epoch in range(opt.epochs):
         label_fake = generator_target(batch_size).to(gpu)
 
         # Add noise to fake data
-        # fake = added_gaussian(fake, add_noise_var)
+        fake = added_gaussian(fake, add_noise_var)
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
         d_err_fake.backward()
@@ -275,7 +274,7 @@ for epoch in range(opt.epochs):
         d_optimizer.step()
 
         ############################
-        # (2) Update Generator: maximize log(D(G(z)))
+        # Train Generator
         ###########################
         generator.zero_grad()
         prediction_fake_g = discriminator(fake)
@@ -300,16 +299,16 @@ for epoch in range(opt.epochs):
             #        test_fake.requires_grad = True
 
             # set ngpu to one, so relevance propagation works
-            # if (opt.ngpu > 1):
-            #     discriminator.setngpu(1)
+            if (opt.ngpu > 1):
+                discriminator.setngpu(1)
 
             # eval needs to be set so batch norm works with batch size of 1
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
-            # if (opt.ngpu > 1):
-            #     discriminator.setngpu(opt.ngpu)
+            if (opt.ngpu > 1):
+                discriminator.setngpu(opt.ngpu)
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
