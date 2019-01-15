@@ -86,7 +86,6 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
 
 def added_gaussian(ins, stddev):
     if stddev > 0:
-        print('stddev:', stddev)
         return ins + torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
     print('ins')
     return ins
@@ -131,23 +130,23 @@ class GeneratorNet(nn.Module):
         self.ngpu = ngpu
         self.net = nn.Sequential(
 
-            nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
+            nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0),
             nn.BatchNorm2d(ngf * 8),
             nn.ReLU(True),
             # state size. (ngf*8) x 4 x 4
-            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
             nn.BatchNorm2d(ngf * 4),
             nn.ReLU(True),
             # state size. (ngf*4) x 8 x 8
-            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1),
             nn.BatchNorm2d(ngf * 2),
             nn.ReLU(True),
             # state size. (ngf*2) x 16 x 16
-            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1),
             nn.BatchNorm2d(ngf),
             nn.ReLU(True),
             # state size. (ngf) x 32 x 32
-            nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf, nc, 4, 2, 1),
             nn.Tanh()
             # state size. (nc) x 64 x 64
         )
@@ -246,7 +245,6 @@ for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1/2)
-        print('var', add_noise_var)
 
         ############################
         # Train Discriminator
@@ -293,6 +291,7 @@ for epoch in range(opt.epochs):
             print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
                   % (epoch, opt.epochs, n_batch, len(dataloader),
                      d_error_total.item(), g_err.item(), d_real, d_fake_1, d_fake_2))
+        print('var', add_noise_var)
 
         if n_batch % 100 == 0:
             # generate fake with fixed noise
