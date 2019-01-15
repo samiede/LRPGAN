@@ -20,9 +20,6 @@ class FirstConvolution(nn.Conv2d):
 
     def relprop(self, R):
 
-
-        print('Beginning of First', len(R[R < 0]))
-
         if type(R) is tuple:
 
             R, params = R
@@ -99,7 +96,6 @@ class FirstConvolution(nn.Conv2d):
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
-
             # Include positive biases as neurons
             nself_biases = copy.deepcopy(nself.bias.data)
             nself.bias.data *= 0
@@ -108,28 +104,27 @@ class FirstConvolution(nn.Conv2d):
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
-
             # Include positive biases as neurons
             pself_biases = copy.deepcopy(pself.bias.data)
             pself.bias.data *= 0
             pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
             X = iself.X
-            L = nself.X * 0 + utils.lowest
-            H = pself.X * 0 + utils.highest
+            L = nself.X.fill_(utils.lowest)
+            H = pself.X.fill_(utils.highest)
 
             iself_f = iself.forward(X)
             # Expand bias for addition
             iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).view(1, -1, 1, 1).expand_as(iself_f)
-            iself_f = iself_f + iself_biases
+            # iself_f = iself_f + iself_biases
             pself_f = pself.forward(L)
             # Expand bias for addition
             pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(pself_f)
-            pself_f = pself_f + pself_biases
+            # pself_f = pself_f + pself_biases
             nself_f = nself.forward(H)
             # Expand bias for addition
             nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(nself_f)
-            nself_f = nself_f + nself_biases
+            # nself_f = nself_f + nself_biases
 
             Z = iself_f - pself_f - nself_f + 1e-9
             S = R / Z
@@ -141,7 +136,8 @@ class FirstConvolution(nn.Conv2d):
             R = X * iself_b - L * pself_b - H * nself_b
 
         if len(R[R < 0]) != 0:
-            print('First', R[R < 0])
+            print('First', len(R[R < 0]), len(R[R > 0]))
+        exit()
         return R.detach()
 
 
