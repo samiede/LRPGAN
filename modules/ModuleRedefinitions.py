@@ -172,11 +172,11 @@ class NextConvolution(nn.Conv2d):
             var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
 
             # Positive weights
-            pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
+            pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
             pself.alpha = self.alpha
-
             # Include positive biases as neurons to normalize over
             # pself_biases = copy.deepcopy(pself.bias.data)
             # pself_biases = beta + gamma * (pself_biases - mean) * gamma
@@ -186,7 +186,8 @@ class NextConvolution(nn.Conv2d):
             pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
 
             # Negative weights
-            nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
+            nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
             nself.beta = self.beta
@@ -214,7 +215,7 @@ class NextConvolution(nn.Conv2d):
             # ZB = ZB + nself_biases
             SB = - nself.beta * torch.div(R, ZB)
 
-            C = torch.autograd.grad(ZA, pself.X, SA)[0] + torch.autograd.grad(ZB, nself.X, SB)[0]
+            C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pself.X * C
 
         # If not, continue as usual
@@ -242,6 +243,9 @@ class NextConvolution(nn.Conv2d):
 
             pX = pself.X + 1e-9
             nX = nself.X + 1e-9
+
+            print(pself.kernel_size)
+            exit()
 
             ZA = pself(pX)
             # expand biases for addition
