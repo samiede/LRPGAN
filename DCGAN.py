@@ -87,7 +87,6 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
 def added_gaussian(ins, stddev):
     if stddev > 0:
         return ins + torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
-    print('ins')
     return ins
 
 
@@ -291,7 +290,7 @@ for epoch in range(opt.epochs):
             print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
                   % (epoch, opt.epochs, n_batch, len(dataloader),
                      d_error_total.item(), g_err.item(), d_real, d_fake_1, d_fake_2))
-        print('var', add_noise_var)
+            print('var', add_noise_var)
 
         if n_batch % 100 == 0:
             # generate fake with fixed noise
