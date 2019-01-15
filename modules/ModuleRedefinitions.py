@@ -137,7 +137,6 @@ class FirstConvolution(nn.Conv2d):
 
         if len(R[R < 0]) != 0:
             print('First', len(R[R < 0]), len(R[R > 0]))
-        exit()
         return R.detach()
 
 
