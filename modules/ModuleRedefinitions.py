@@ -138,8 +138,6 @@ class FirstConvolution(nn.Conv2d):
 
             R = X * iself_b - L * pself_b - H * nself_b
 
-        if len(R[R < 0]) != 0:
-            print('First', len(R[R < 0]), len(R[R > 0]))
         return R.detach()
 
 
@@ -244,9 +242,6 @@ class NextConvolution(nn.Conv2d):
             pX = pself.X + 1e-9
             nX = nself.X + 1e-9
 
-            print(pself.kernel_size)
-            exit()
-
             ZA = pself(pX)
             # expand biases for addition
             # pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(ZA)
@@ -262,8 +257,6 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
-        if len(R[R < 0]) != 0:
-            print('Elements', self.name, R[R < 0])
         return R.detach()
 
 
