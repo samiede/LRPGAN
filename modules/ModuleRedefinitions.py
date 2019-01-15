@@ -147,7 +147,6 @@ class NextConvolution(nn.Conv2d):
                  bias=True, alpha=1):
         super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
 
-
         self.name = name
         # Variables for Relevance Propagation
         self.X = None
@@ -257,6 +256,8 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
+        if(len(R[R < 0]) > 0):
+            print(R[R < 0])
         return R.detach()
 
 
