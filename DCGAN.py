@@ -86,7 +86,9 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
 
 def added_gaussian(ins, stddev):
     if stddev > 0:
+        print('stddev:', stddev)
         return ins + torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
+    print('ins')
     return ins
 
 
@@ -238,13 +240,13 @@ add_noise_var = 0.1
 # Create Logger instance
 logger = Logger(model_name='LRPGAN', data_name=opt.dataset, dir_name=outf)
 print('Created Logger')
-
 # training
 
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1/2)
+        print('var', add_noise_var)
 
         ############################
         # Train Discriminator
