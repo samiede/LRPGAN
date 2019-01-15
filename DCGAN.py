@@ -30,6 +30,7 @@ parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--imageSize', type=int, default=64)
 parser.add_argument('--loadG', default='', help='path to generator (to continue training')
 parser.add_argument('--loadD', default='', help='path to discriminator (to continue training')
+parser.add_argument('--alpha', default=1, type=int)
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -38,6 +39,7 @@ ngpu = int(opt.ngpu)
 ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
+alpha = int(opt.alpha)
 print(opt)
 
 try:
@@ -169,19 +171,19 @@ class DiscriminatorNet(nn.Module):
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1),
+                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1),
+                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1),
+                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
             ),
