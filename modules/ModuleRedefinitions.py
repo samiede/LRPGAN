@@ -30,18 +30,20 @@ class FirstConvolution(nn.Conv2d):
 
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
+            iself.X = self.X.clone()
             # Include positive biases as neurons
-            iself_biases = copy.deepcopy(iself.bias.data)
-            iself_biases = beta + gamma * (iself_biases - mean) * gamma
+            # iself_biases = copy.deepcopy(iself.bias.data)
+            # iself_biases = beta + gamma * (iself_biases - mean) * gamma
             iself.bias.data *= 0
             iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
                                 * var.view(-1, 1, 1, 1).expand_as(iself.weight)
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
+            nself.X = self.X.clone()
             # Include positive biases as neurons
-            nself_biases = copy.deepcopy(nself.bias.data)
-            nself_biases = beta + gamma * (nself_biases - mean) * gamma
+            # nself_biases = copy.deepcopy(nself.bias.data)
+            # nself_biases = beta + gamma * (nself_biases - mean) * gamma
             nself.bias.data *= 0
             nself.weight.data = nself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(nself.weight) \
                                 * var.view(-1, 1, 1, 1).expand_as(nself.weight)
@@ -49,31 +51,32 @@ class FirstConvolution(nn.Conv2d):
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
+            pself.X = self.X.clone()
             # Include positive biases as neurons to normalize over
-            pself_biases = copy.deepcopy(pself.bias.data)
+            # pself_biases = copy.deepcopy(pself.bias.data)
             # incorporate batch norm
-            pself_biases = beta + gamma * (pself_biases - mean) * gamma
+            # pself_biases = beta + gamma * (pself_biases - mean) * gamma
             pself.bias.data *= 0
             pself.weight.data = pself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(pself.weight) \
                                 * var.view(-1, 1, 1, 1).expand_as(pself.weight)
             pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
-            X = self.X
-            L = self.X * 0 + utils.lowest
-            H = self.X * 0 + utils.highest
+            X = iself.X
+            L = nself.X.fill_(utils.lowest)
+            H = pself.X.fill_(utils.highest)
 
             iself_f = iself.forward(X)
             # Expand bias for addition
-            iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).view(1, -1, 1, 1).expand_as(iself_f)
-            iself_f = iself_f + iself_biases
+            # iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).view(1, -1, 1, 1).expand_as(iself_f)
+            # iself_f = iself_f + iself_biases
             pself_f = pself.forward(L)
             # Expand bias for addition
-            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(pself_f)
-            pself_f = pself_f + pself_biases
+            # pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(pself_f)
+            # pself_f = pself_f + pself_biases
             nself_f = nself.forward(H)
             # Expand bias for addition
-            nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(nself_f)
-            nself_f = nself_f + nself_biases
+            # nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(nself_f)
+            # nself_f = nself_f + nself_biases
 
             Z = iself_f - pself_f - nself_f + 1e-9
             S = R / Z
@@ -90,14 +93,14 @@ class FirstConvolution(nn.Conv2d):
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
             # Include positive biases as neurons
-            iself_biases = copy.deepcopy(iself.bias.data)
+            # iself_biases = copy.deepcopy(iself.bias.data)
             iself.bias.data *= 0
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
             # Include positive biases as neurons
-            nself_biases = copy.deepcopy(nself.bias.data)
+            # nself_biases = copy.deepcopy(nself.bias.data)
             nself.bias.data *= 0
             nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
 
@@ -105,7 +108,7 @@ class FirstConvolution(nn.Conv2d):
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
             # Include positive biases as neurons
-            pself_biases = copy.deepcopy(pself.bias.data)
+            # pself_biases = copy.deepcopy(pself.bias.data)
             pself.bias.data *= 0
             pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
@@ -115,15 +118,15 @@ class FirstConvolution(nn.Conv2d):
 
             iself_f = iself.forward(X)
             # Expand bias for addition
-            iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).view(1, -1, 1, 1).expand_as(iself_f)
+            # iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).view(1, -1, 1, 1).expand_as(iself_f)
             # iself_f = iself_f + iself_biases
             pself_f = pself.forward(L)
             # Expand bias for addition
-            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(pself_f)
+            # pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(pself_f)
             # pself_f = pself_f + pself_biases
             nself_f = nself.forward(H)
             # Expand bias for addition
-            nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(nself_f)
+            # nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(nself_f)
             # nself_f = nself_f + nself_biases
 
             Z = iself_f - pself_f - nself_f + 1e-9
@@ -171,10 +174,12 @@ class NextConvolution(nn.Conv2d):
             # Positive weights
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
+            pself.X = self.X.clone()
+            pself.alpha = self.alpha
 
             # Include positive biases as neurons to normalize over
-            pself_biases = copy.deepcopy(pself.bias.data)
-            pself_biases = beta + gamma * (pself_biases - mean) * gamma
+            # pself_biases = copy.deepcopy(pself.bias.data)
+            # pself_biases = beta + gamma * (pself_biases - mean) * gamma
             pself.bias.data *= 0
             pself.weight.data = pself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(pself.weight) \
                                 * var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(pself.weight)
@@ -183,31 +188,34 @@ class NextConvolution(nn.Conv2d):
             # Negative weights
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
+            nself.X = self.X.clone()
+            nself.beta = self.beta
 
             # Include positive biases as neurons to normalize over
-            nself_biases = copy.deepcopy(pself.bias.data)
-            nself_biases = beta + gamma * (nself_biases - mean) * gamma
+            # nself_biases = copy.deepcopy(pself.bias.data)
+            # nself_biases = beta + gamma * (nself_biases - mean) * gamma
             nself.bias.data *= 0
             nself.weight.data = nself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(nself.weight) \
                                 * var.view(-1, 1, 1, 1).expand_as(nself.weight)
             nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
-            X = self.X + 1e-9
+            pX = pself.X + 1e-9
+            nX = nself.X + 1e-9
 
-            ZA = pself(X)
+            ZA = pself(pX)
             # expand biases for addition
-            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(ZA)
-            ZA = ZA + pself_biases
-            SA = self.alpha * torch.div(R, ZA)
+            # pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(ZA)
+            # ZA = ZA + pself_biases
+            SA = pself.alpha * torch.div(R, ZA)
 
-            ZB = nself(X)
+            ZB = nself(nX)
             # expand biases for addition HERE NEGATIVE BIASES? torch.min???
-            nself_biases = torch.min(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(ZB)
-            ZB = ZB + nself_biases
-            SB = - self.beta * torch.div(R, ZB)
+            # nself_biases = torch.min(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(ZB)
+            # ZB = ZB + nself_biases
+            SB = - nself.beta * torch.div(R, ZB)
 
-            C = torch.autograd.grad(ZA, self.X, SA)[0] + torch.autograd.grad(ZB, self.X, SB)[0]
-            R = self.X * C
+            C = torch.autograd.grad(ZA, pself.X, SA)[0] + torch.autograd.grad(ZB, nself.X, SB)[0]
+            R = pself.X * C
 
         # If not, continue as usual
         else:
@@ -218,7 +226,7 @@ class NextConvolution(nn.Conv2d):
             pself.X = self.X.clone()
             pself.alpha = self.alpha
             # Include positive biases as neurons
-            pself_biases = copy.deepcopy(pself.bias.data)
+            # pself_biases = copy.deepcopy(pself.bias.data)
             pself.bias.data *= 0
             pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
 
@@ -228,7 +236,7 @@ class NextConvolution(nn.Conv2d):
             nself.X = self.X.clone()
             nself.beta = self.beta
             # Include positive biases as neurons
-            nself_biases = copy.deepcopy(nself.bias.data)
+            # nself_biases = copy.deepcopy(nself.bias.data)
             nself.bias.data *= 0
             nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
@@ -237,13 +245,13 @@ class NextConvolution(nn.Conv2d):
 
             ZA = pself(pX)
             # expand biases for addition
-            pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(ZA)
+            # pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(ZA)
             # ZA = ZA + pself_biases
             SA = pself.alpha * torch.div(R, ZA)
 
             ZB = nself(nX)
             # expand biases for addition HERE NEGATIVE BIASES? torch.min???
-            nself_biases = torch.min(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(ZB)
+            # nself_biases = torch.min(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(ZB)
             # ZB = ZB + nself_biases
             SB = - nself.beta * torch.div(R, ZB)
 
@@ -270,7 +278,7 @@ class LeakyReLU(nn.LeakyReLU):
 class BatchNorm2d(nn.BatchNorm2d):
 
     def relprop(self, R):
-        # return R, self.getParams()
+        return R, self.getParams()
         return R
 
     def getParams(self):
