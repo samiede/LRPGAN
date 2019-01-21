@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from utils import utils
 import copy
+import pdb
 
 
 class FirstConvolution(nn.Conv2d):
@@ -136,8 +137,6 @@ class FirstConvolution(nn.Conv2d):
             pself_b = torch.autograd.grad(pself_f, L, S, retain_graph=True)[0]
             nself_b = torch.autograd.grad(nself_f, H, S)[0]
 
-            R = X * iself_b - L * pself_b - H * nself_b
-
         return R.detach()
 
 
@@ -256,8 +255,6 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
-        if(len(R[R < 0]) > 0):
-            print(R[R < 0])
         return R.detach()
 
 
