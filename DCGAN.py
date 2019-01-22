@@ -31,7 +31,7 @@ parser.add_argument('--imageSize', type=int, default=64)
 parser.add_argument('--loadG', default='', help='path to generator (to continue training')
 parser.add_argument('--loadD', default='', help='path to discriminator (to continue training')
 parser.add_argument('--alpha', default=1, type=int)
-parser.add_argument('--beta', default=None, type=int)
+parser.add_argument('--beta', default=None, type=float)
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
