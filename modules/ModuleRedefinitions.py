@@ -144,14 +144,17 @@ class FirstConvolution(nn.Conv2d):
 class NextConvolution(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, name, stride=1, padding=2, dilation=1, groups=1,
-                 bias=True, alpha=1):
+                 bias=True, alpha=1, beta=None):
         super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
 
         self.name = name
         # Variables for Relevance Propagation
         self.X = None
         self.alpha = alpha
-        self.beta = alpha - 1
+        if beta is None:
+            self.beta = alpha - 1
+        else:
+            self.beta = beta
 
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
