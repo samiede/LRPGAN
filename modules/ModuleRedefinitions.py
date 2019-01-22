@@ -392,10 +392,10 @@ class Pooling(nn.AvgPool2d):
             R.unsqueeze(-1).unsqueeze(-1)
 
         X = self.X.clone()
-        Z = (self.forward(self.X) + 1e-9)
+        Z = (self.forward(X) + 1e-9)
         S = R / Z
-        C = torch.autograd.grad(Z, self.X, S)[0]
-        R = self.X * C
+        C = torch.autograd.grad(Z, X, S)[0]
+        R = X * C
         return R.detach()
 
 
