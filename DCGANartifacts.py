@@ -171,7 +171,7 @@ class DiscriminatorNet(nn.Module):
         self.ngpu = ngpu
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
-                nnrd.FirstConvolution(nc, ndf, 3, 1, 1),
+                nnrd.FirstConvolution(nc, ndf, 5, 1, 2),
                 nnrd.Pooling(2),
                 nnrd.ReLu(),
             ),
