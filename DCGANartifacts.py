@@ -172,7 +172,11 @@ class DiscriminatorNet(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstConvolution(nc, ndf, 5, 1, 2),
-                nnrd.Pooling(2),
+                nnrd.ReLu(),
+            ),
+            nnrd.Layer(
+                nnrd.NextConvolution(ndf, ndf, 4, '0', 2, 1, alpha=alpha, beta=beta),
+                nnrd.BatchNorm2d(ndf),
                 nnrd.ReLu(),
             ),
             # state size. (ndf) x 32 x 32
