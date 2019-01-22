@@ -40,9 +40,9 @@ ngpu = int(opt.ngpu)
 ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
-alpha = int(opt.alpha)
+alpha = opt.alpha
 if opt.beta is not None:
-    beta = int(opt.beta)
+    beta = opt.beta
 else:
     beta = opt.beta
 print(opt)
