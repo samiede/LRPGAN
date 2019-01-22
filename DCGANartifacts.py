@@ -137,6 +137,11 @@ class GeneratorNet(nn.Module):
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0),
             nn.BatchNorm2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
+
+            nn.Conv2d(ngf * 8, ngf * 8, 3, 1, 1),
+            nn.BatchNorm2d(ngf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
             nn.BatchNorm2d(ngf * 4),
