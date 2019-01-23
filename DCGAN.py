@@ -14,6 +14,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import modules.ModuleRedefinitions as nnrd
+import models._DCGAN as dcgm
 from utils.utils import Logger
 import subprocess
 
@@ -215,12 +216,14 @@ class DiscriminatorNet(nn.Module):
         self.ngpu = ngpu
 
 
-generator = GeneratorNet(ngpu).to(gpu)
+# generator = GeneratorNet(ngpu).to(gpu)
+generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
 
-discriminator = DiscriminatorNet(ngpu).to(gpu)
+# discriminator = DiscriminatorNet(ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboard(nc, ndf, alpha, beta, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     discriminator.load_state_dict(torch.load(opt.loadG))
