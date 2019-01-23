@@ -314,7 +314,7 @@ class VBN(nn.Module):
         self.batch_size = None
         # reference output
         self.reference_output = None
-        gamma = torch.normal(means=torch.ones(1, num_features, 1), std=0.02)
+        gamma = torch.normal(mean=torch.ones(1, num_features, 1), std=0.02)
         self.gamma = nn.Parameter(gamma.float())
         self.beta = nn.Parameter(torch.cuda.FloatTensor(1, num_features, 1).fill_(0))
 
