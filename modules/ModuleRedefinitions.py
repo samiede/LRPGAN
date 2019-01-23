@@ -285,6 +285,92 @@ class BatchNorm2d(nn.BatchNorm2d):
                 'eps': copy.deepcopy(self.eps), 'beta': copy.deepcopy(self.bias),
                 'mean': copy.deepcopy(self.running_mean)}
 
+class VirtualBatchNorm2d(nn.Module):
+
+    def __init__(self, ref_batch, eps: float=1e-5):
+        super().__init__(ref_batch, eps)
+
+        self.batch_size = ref_batch.size(0)
+        # self.eps = eps
+        self.mean = torch.mean(ref_batch, [0, 2])
+        self.ref_mean = self.register_parameter('ref_mean', None)
+        self.ref_mean_sq = self.register_parameter('ref_mean_sq', None)
+
+
+class VBN(nn.Module):
+    """
+    Virtual Batch Normalization
+    """
+
+    def __init__(self, num_features, eps=1e-5):
+        super(VBN, self).__init__()
+        assert isinstance(eps, float)
+
+        # batch statistics
+        self.num_features = num_features
+        self.eps = eps
+        self.mean = torch.zeros(1, num_features, 1)
+        self.mean_sq = torch.zeros(1, num_features, 1)
+        self.batch_size = None
+        # reference output
+        self.reference_output = None
+        gamma = torch.normal(means=torch.ones(1, num_features, 1), std=0.02)
+        self.gamma = nn.Parameter(gamma.float())
+        self.beta = nn.Parameter(torch.cuda.FloatTensor(1, num_features, 1).fill_(0))
+
+    def initialize(self, x):
+        # compute batch statistics
+        mean = x.mean(2).mean(0).resize(1, x.size(1), 1)
+        mean_sq = (x**2).mean(2).mean(0).resize(1, x.size(1), 1)
+        self.batch_size = x.size(0)
+        assert x is not None
+        assert mean is not None
+        assert mean_sq is not None
+        # build detached variables to avoid backprop to graph to compute mean and mean_sq
+        # we will manually backprop those in hooks
+        self.mean = nn.Variable(mean.data.clone(), requires_grad = True)  # new code
+        self.mean_sq = nn.Variable(mean_sq.data.clone(), requires_grad = True)  # new code
+        self.mean.register_hook(lambda grad: mean.backward(grad, retain_graph = True))  # new code
+        self.mean_sq.register_hook(lambda grad: mean_sq.backward(grad, retain_graph = True))  # new code
+        # compute reference output
+        out = self._normalize(x, mean, mean_sq)
+        self.reference_output = out.detach_()  # change, just to remove unnecessary saved graph
+        return mean, mean_sq
+
+    def get_ref_batch_stats(self):
+        return self.mean, self.mean_sq
+
+    def forward(self, x):
+        if self.reference_output is None:
+            ref_mean, ref_mean_sq = self.initialize(x)
+        else:
+            ref_mean, ref_mean_sq = self.get_ref_batch_stats()
+        new_coeff = 1. / (self.batch_size + 1.)
+        old_coeff = 1. - new_coeff
+        new_mean = x.mean(2).mean(0).resize_as(self.mean)
+        new_mean_sq = (x**2).mean(2).mean(0).resize_as(self.mean_sq)
+        mean = new_coeff * new_mean + old_coeff * ref_mean  # change
+        mean_sq = new_coeff * new_mean_sq + old_coeff * ref_mean_sq  # change
+        x = self._normalize(x, mean, mean_sq)
+        return x
+
+    def _normalize(self, x, mean, mean_sq):
+        assert self.eps is not None
+        assert mean_sq is not None
+        assert mean is not None
+        assert len(x.size()) == 3
+        #gamma = Variable(torch.Tensor(1, x.size(1), 1).cuda().normal_(1., 0.02))
+        #beta = Variable(torch.cuda.FloatTensor(1, x.size(1), 1).fill_(0))
+        std = torch.sqrt(self.eps + mean_sq - mean**2)
+        x = x - mean
+        x = x / std
+        x = x * self.gamma
+        x = x + self.beta
+        return x
+    def __repr__(self):
+        return ('{name}(num_features={num_features}, eps={eps}'.format(
+            name=self.__class__.__name__, **self.__dict__))
+
 
 class Dropout(nn.Dropout):
 
