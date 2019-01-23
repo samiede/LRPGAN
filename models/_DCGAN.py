@@ -26,7 +26,7 @@ class GeneratorNetVBN(nn.Module):
 
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
-            nn.VBN(ngf * 4),
+            nnrd.VBN(ngf * 4),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1),
