@@ -222,8 +222,9 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
 
 
 class GeneratorNet(nn.Module):
-    def __init__(self, nz, ngf, ngpu):
+    def __init__(self, nc, ngf, ngpu):
         super(GeneratorNet, self).__init__()
+        nz = 100
         self.ngpu = ngpu
         self.net = nn.Sequential(
 
