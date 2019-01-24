@@ -217,7 +217,7 @@ class DiscriminatorNet(nn.Module):
 
 
 # generator = GeneratorNet(ngpu).to(gpu)
-generator = dcgm.Generator(nz, ngf, ngpu).to(gpu)
+generator = dcgm.GeneratorNet(nz, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
