@@ -50,10 +50,10 @@ class GeneratorNetVBN(nn.Module):
         return output
 
 
-class DiscriminatorVBN(nn.Module):
+class DiscriminatorNetVBN(nn.Module):
 
     def __init__(self, nc, ndf, alpha, beta, ngpu=1):
-        super(DiscriminatorVBN, self).__init__()
+        super(DiscriminatorNetVBN, self).__init__()
 
         self.ngpu = ngpu
         self.net = nnrd.RelevanceNet(
