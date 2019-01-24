@@ -10,7 +10,7 @@ import modules.ModuleRedefinitions as nnrd
 
 
 class GeneratorNetVBN(nn.Module):
-    def __init__(self, nc, ngf, ngpu):
+    def __init__(self, nz, ngf, ngpu):
         super(GeneratorNetVBN, self).__init__()
         self.ngpu = ngpu
         nz = 100
@@ -115,7 +115,7 @@ class DiscriminatorVBN(nn.Module):
 
 
 class GeneratorNetLessCheckerboard(nn.Module):
-    def __init__(self, nc, ngf, ngpu):
+    def __init__(self, nz, ngf, ngpu):
         super(GeneratorNetLessCheckerboard, self).__init__()
         self.ngpu = ngpu
         nz = 100
@@ -222,7 +222,7 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
 
 
 class GeneratorNet(nn.Module):
-    def __init__(self, nc, ngf, ngpu):
+    def __init__(self, nz, ngf, ngpu):
         super(GeneratorNet, self).__init__()
         self.ngpu = ngpu
         self.net = nn.Sequential(
@@ -265,7 +265,7 @@ class DiscriminatorNet(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2, True),
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
@@ -277,13 +277,13 @@ class DiscriminatorNet(nn.Module):
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha, beta=beta),
                 nnrd.BatchNorm2d(ndf * 4),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2, True),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha,  beta=beta),
                 nnrd.BatchNorm2d(ndf * 8),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2, True),
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.Layer(
