@@ -10,7 +10,7 @@ import modules.ModuleRedefinitions as nnrd
 
 
 class GeneratorNetVBN(nn.Module):
-    def __init__(self, nz, ngf, ngpu):
+    def __init__(self, nc, ngf, ngpu):
         super(GeneratorNetVBN, self).__init__()
         self.ngpu = ngpu
         nz = 100
@@ -115,7 +115,7 @@ class DiscriminatorVBN(nn.Module):
 
 
 class GeneratorNetLessCheckerboard(nn.Module):
-    def __init__(self, nz, ngf, ngpu):
+    def __init__(self, nc, ngf, ngpu):
         super(GeneratorNetLessCheckerboard, self).__init__()
         self.ngpu = ngpu
         nz = 100
