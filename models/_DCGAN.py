@@ -17,7 +17,7 @@ class GeneratorNetVBN(nn.Module):
         self.net = nn.Sequential(
 
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0),
-            nn.VBN(ngf * 8),
+            nnrd.VBN(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
 
             nn.Conv2d(ngf * 8, ngf * 8, 3, 1, 1),
