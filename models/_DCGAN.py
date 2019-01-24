@@ -230,19 +230,19 @@ class GeneratorNet(nn.Module):
 
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0),
             nn.BatchNorm2d(ngf * 8),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
             nn.BatchNorm2d(ngf * 4),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1),
             nn.BatchNorm2d(ngf * 2),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
             # state size. (ngf*2) x 16 x 16
             nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1),
             nn.BatchNorm2d(ngf),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, True),
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(ngf, nc, 4, 2, 1),
             nn.Tanh()
@@ -266,7 +266,7 @@ class DiscriminatorNet(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstConvolution(nc, ndf, 4, 2, 1),
-                nn.LeakyReLU(0.2, True),
+                nnrd.ReLu(),
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
@@ -278,13 +278,13 @@ class DiscriminatorNet(nn.Module):
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha, beta=beta),
                 nnrd.BatchNorm2d(ndf * 4),
-                nn.LeakyReLU(0.2, True),
+                nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha,  beta=beta),
                 nnrd.BatchNorm2d(ndf * 8),
-                nn.LeakyReLU(0.2, True),
+                nnrd.ReLu(),
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.Layer(

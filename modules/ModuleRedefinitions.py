@@ -302,34 +302,35 @@ class VBN(nn.Module):
     Virtual Batch Normalization
     """
 
-    def __init__(self, num_channels, eps=1e-5):
+    def __init__(self, num_features, eps=1e-5):
         super(VBN, self).__init__()
         assert isinstance(eps, float)
 
         # batch statistics
-        self.num_features = num_channels
         self.eps = eps
         self.mean = None
         self.mean_sq = None
         self.batch_size = None
         # reference output
         self.reference_output = None
-        # gamma = torch.normal(mean=torch.ones(1, num_features, 1), std=0.02)
-        # self.gamma = nn.Parameter(gamma.float())
-        # self.beta = nn.Parameter(torch.FloatTensor(1, num_features, 1).fill_(0))
+        self.gamma = None
+        self.beta = None
+        gamma = torch.normal(mean=torch.ones(1, num_features, 1, 1), std=0.02)
+        self.gamma = nn.Parameter(gamma.float())
+        self.beta = nn.Parameter(torch.FloatTensor(1, num_features, 1, 1).fill_(0))
 
     def initialize(self, x):
         # compute batch statistics
-        mean = x.mean(2, keepdim=True).mean(1, keepdim=True).mean(0, keepdim=True).resize(1, x.size(1), 1)
-        mean_sq = (x**2).mean(2, keepdim=True).mean(0, keepdim=True).resize(1, x.size(1), 1)
+        mean = x.mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
+        mean_sq = (x**2).mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
         self.batch_size = x.size(0)
         assert x is not None
         assert mean is not None
         assert mean_sq is not None
         # build detached variables to avoid backprop to graph to compute mean and mean_sq
         # we will manually backprop those in hooks
-        self.mean = nn.Variable(mean.data.clone(), requires_grad = True)  # new code
-        self.mean_sq = nn.Variable(mean_sq.data.clone(), requires_grad = True)  # new code
+        self.mean = mean.clone()
+        self.mean_sq = mean_sq.clone()
         self.mean.register_hook(lambda grad: mean.backward(grad, retain_graph = True))  # new code
         self.mean_sq.register_hook(lambda grad: mean_sq.backward(grad, retain_graph = True))  # new code
         # compute reference output
@@ -347,8 +348,8 @@ class VBN(nn.Module):
             ref_mean, ref_mean_sq = self.get_ref_batch_stats()
         new_coeff = 1. / (self.batch_size + 1.)
         old_coeff = 1. - new_coeff
-        new_mean = x.mean(2, keepdim=True).mean(0, keepdim=True).resize_as(self.mean)
-        new_mean_sq = (x**2).mean(2, keepdim=True).mean(0, keepdim=True).resize_as(self.mean_sq)
+        new_mean = x.mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
+        new_mean_sq = (x**2).mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
         mean = new_coeff * new_mean + old_coeff * ref_mean  # change
         mean_sq = new_coeff * new_mean_sq + old_coeff * ref_mean_sq  # change
         x = self._normalize(x, mean, mean_sq)
@@ -359,14 +360,13 @@ class VBN(nn.Module):
         assert mean_sq is not None
         assert mean is not None
         assert len(x.size()) == 4
-        #gamma = Variable(torch.Tensor(1, x.size(1), 1).cuda().normal_(1., 0.02))
-        #beta = Variable(torch.cuda.FloatTensor(1, x.size(1), 1).fill_(0))
         std = torch.sqrt(self.eps + mean_sq - mean**2)
         x = x - mean
         x = x / std
         x = x * self.gamma
         x = x + self.beta
         return x
+
     def __repr__(self):
         return ('{name}(num_features={num_features}, eps={eps}'.format(
             name=self.__class__.__name__, **self.__dict__))
