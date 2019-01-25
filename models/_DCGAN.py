@@ -84,7 +84,7 @@ class DiscriminatorNetLessCheckerboardTips(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
 
             # state size. (ndf*4) x 8 x 8
-            nn.Conv2(ndf * 4, ndf * 8, 4, 2, 1),
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1),
             nn.BatchNorm2d(ndf * 8),
             nn.LeakyReLU(0.2, inplace=True),
 
