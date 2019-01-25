@@ -104,7 +104,7 @@ def discriminator_target(size):
     Tensor containing soft labels, with shape = size
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size).uniform_(0.8, 1.0)
+    return torch.Tensor(size).uniform_(0.7, 1.0)
 
 
 def generator_target(size):
@@ -114,6 +114,7 @@ def generator_target(size):
     :return: zeros tensor
     """
     # noinspection PyUnresolvedReferences
+    return torch.Tensor(size).uniform_(0.0, 0.3)
     return torch.Tensor(size).zero_()
 
 
