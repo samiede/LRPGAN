@@ -371,8 +371,8 @@ class VBN2d(nn.Module):
         # batch statistics
         self.num_features = num_features
         self.eps = eps  # epsilon
-        self.ref_mean = self.register_parameter('ref_mean', None)
-        self.ref_mean_sq = self.register_parameter('ref_mean_sq', None)
+        # self.ref_mean = self.register_parameter('ref_mean', None)
+        # self.ref_mean_sq = self.register_parameter('ref_mean_sq', None)
 
         # define gamma and beta parameters
         gamma = torch.normal(mean=torch.ones(1, num_features, 1, 1), std=0.02)
