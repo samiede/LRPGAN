@@ -17,7 +17,7 @@ class GeneratorNetLessCheckerboardTips(nn.Module):
 
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0),
             nn.BatchNorm2d(ngf * 8),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
 
             nn.Conv2d(ngf * 8, ngf * 8, 3, 1, 1),
@@ -28,19 +28,19 @@ class GeneratorNetLessCheckerboardTips(nn.Module):
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
             nn.BatchNorm2d(ngf * 4),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
 
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1),
             nn.BatchNorm2d(ngf * 2),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
 
             # state size. (ngf*2) x 16 x 16
             nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1),
             nn.BatchNorm2d(ngf),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
 
             # state size. (ngf) x 32 x 32
