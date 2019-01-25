@@ -293,8 +293,6 @@ class GaussianNoise(nn.Module):
 
     def forward(self, x):
         if not self.training: return x
-        self.noise.normal_(0, std=self.std)
-
         return x + torch.Tensor(torch.randn(x.size()) * self.stddev)
 
 
