@@ -66,31 +66,31 @@ class DiscriminatorNetLessCheckerboardTips(nn.Module):
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
                 nnrd.FirstConvolution(nc, ndf, 5, 1, 2),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
             ),
             nnrd.Layer(
                 nnrd.NextConvolution(ndf, ndf, 4, '0', 2, 1, alpha=alpha, beta=beta),
                 nnrd.BatchNorm2d(ndf),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
                 nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha, beta=beta),
                 nnrd.BatchNorm2d(ndf * 2),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
 
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha, beta=beta),
                 nnrd.BatchNorm2d(ndf * 4),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
                 nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha, beta=beta),
                 nnrd.BatchNorm2d(ndf * 8),
-                nnrd.ReLu(),
+                nn.LeakyReLU(0.2),
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.Layer(
