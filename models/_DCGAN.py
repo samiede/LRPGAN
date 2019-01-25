@@ -10,32 +10,37 @@ import modules.ModuleRedefinitions as nnrd
 
 
 class GeneratorNetVBN(nn.Module):
-    def __init__(self, nc, ngf, ngpu):
+    def __init__(self, nc, ngf, ngpu, ref_batch):
         super(GeneratorNetVBN, self).__init__()
         self.ngpu = ngpu
+        self.ref_batch = ref_batch
         nz = 100
+
         self.net = nn.Sequential(
 
             nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0),
-            nnrd.VBN(ngf * 8),
+            nnrd.VBN2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
 
             nn.Conv2d(ngf * 8, ngf * 8, 3, 1, 1),
-            nnrd.VBN(ngf * 8),
+            nnrd.VBN2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
 
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
-            nnrd.VBN(ngf * 4),
+            nnrd.VBN2d(ngf * 4),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ngf*4) x 8 x 8
+
             nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1),
-            nnrd.VBN(ngf * 2),
+            nnrd.VBN2d(ngf * 2),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ngf*2) x 16 x 16
+
             nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1),
-            nnrd.VBN(ngf),
+            nnrd.VBN2d(ngf),
             nn.LeakyReLU(0.2, inplace=True),
+
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(ngf, nc, 4, 2, 1),
             nn.Tanh()
@@ -43,11 +48,66 @@ class GeneratorNetVBN(nn.Module):
         )
 
     def forward(self, x):
-        if x.is_cuda and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
-        else:
-            output = self.net(x)
-        return output
+
+        ref_x = self.ref_batch
+
+        # Reference Pass for virtual batch norm
+
+        ref_x = self.net[0](ref_x)
+        ref_x, ref_mean1, ref_meansq1 = self.net[1](ref_x, None, None)
+        ref_x = self.net[2](ref_x)
+
+        ref_x = self.net[3](ref_x)
+        ref_x, ref_mean2, ref_meansq2 = self.net[4](ref_x, None, None)
+        ref_x = self.net[5](ref_x)
+
+        ref_x = self.net[6](ref_x)
+        ref_x, ref_mean3, ref_meansq3 = self.net[7](ref_x, None, None)
+        ref_x = self.net[8](ref_x)
+
+        ref_x = self.net[9](ref_x)
+        ref_x, ref_mean4, ref_meansq4 = self.net[10](ref_x, None, None)
+        ref_x = self.net[11](ref_x)
+
+        ref_x = self.net[12](ref_x)
+        _, ref_mean5, ref_meansq5 = self.net[13](ref_x, None, None)
+
+        # We don't have to go forward any longer because we don't need the result, only the ref_means
+
+        # Actual training pass
+
+        x = self.net[0](x)
+        x, _, _ = self.net[1](x, ref_mean1, ref_meansq1)
+        x = self.net[2](x)
+
+        x = self.net[3](x)
+        x, _, _ = self.net[4](x, ref_mean2, ref_meansq2)
+        x = self.net[5](x)
+
+        x = self.net[6](x)
+        x, _, _ = self.net[7](x, ref_mean3, ref_meansq3)
+        x = self.net[8](x)
+
+        x = self.net[9](x)
+        x, _, _ = self.net[10](x, ref_mean4, ref_meansq4)
+        x = self.net[11](x)
+
+        x = self.net[12](x)
+        x, _ , _ = self.net[13](x, ref_mean5, ref_meansq5)
+        x = self.net[14](x)
+
+        x = self.net[15](x)
+        x = self.net[16](x)
+
+        return x
+
+
+
+        # if x.is_cuda and self.ngpu > 1:
+        #     output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
+        # else:
+        #     output = self.net(x)
+        # return output
 
 
 class DiscriminatorNetVBN(nn.Module):

@@ -87,7 +87,6 @@ assert dataset
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                          shuffle=True, num_workers=2)
 
-
 # misc. helper functions
 
 def added_gaussian(ins, stddev):
@@ -217,7 +216,8 @@ class DiscriminatorNet(nn.Module):
 
 
 # generator = GeneratorNet(ngpu).to(gpu)
-generator = dcgm.GeneratorNetVBN(nc, ngf, ngpu).to(gpu)
+ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
+generator = dcgm.GeneratorNetVBN(nc, ngf, ngpu, ref_noise).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
