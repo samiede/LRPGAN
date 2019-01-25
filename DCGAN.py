@@ -87,6 +87,7 @@ assert dataset
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                          shuffle=True, num_workers=2)
 
+
 # misc. helper functions
 
 def added_gaussian(ins, stddev):
@@ -114,7 +115,7 @@ def generator_target(size):
     :return: zeros tensor
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size).uniform_(0.0, 0.3)
+    # return torch.Tensor(size).uniform_(0.0, 0.3)
     return torch.Tensor(size).zero_()
 
 
@@ -129,7 +130,6 @@ def weights_init(m):
         m.bias.data.fill_(0)
 
 
-
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
 generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
@@ -138,7 +138,7 @@ if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
 
 # discriminator = DiscriminatorNet(ngpu).to(gpu)
-discriminator = dcgm.DiscriminatorNetLessCheckerboard(nc, ndf, ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboard(nc, ndf, alpha, beta, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     discriminator.load_state_dict(torch.load(opt.loadG))
@@ -166,7 +166,7 @@ print('Created Logger')
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
-        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1/2)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
 
         ############################
         # Train Discriminator
