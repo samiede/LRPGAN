@@ -285,79 +285,17 @@ class BatchNorm2d(nn.BatchNorm2d):
                 'eps': copy.deepcopy(self.eps), 'beta': copy.deepcopy(self.bias),
                 'mean': copy.deepcopy(self.running_mean)}
 
-class VBN(nn.Module):
-    """
-    Virtual Batch Normalization
-    """
 
-    def __init__(self, num_features, eps=1e-5):
-        super(VBN, self).__init__()
-        assert isinstance(eps, float)
-
-        # batch statistics
-        self.eps = eps
-        self.mean = None
-        self.mean_sq = None
-        self.batch_size = None
-        # reference output
-        self.reference_output = None
-        self.gamma = None
-        self.beta = None
-        gamma = torch.normal(mean=torch.ones(1, num_features, 1, 1), std=0.02)
-        self.gamma = nn.Parameter(gamma.float())
-        self.beta = nn.Parameter(torch.FloatTensor(1, num_features, 1, 1).fill_(0))
-
-    def initialize(self, x):
-        # compute batch statistics
-        mean = x.mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
-        mean_sq = (x**2).mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
-        self.batch_size = x.size(0)
-        assert x is not None
-        assert mean is not None
-        assert mean_sq is not None
-        # build detached variables to avoid backprop to graph to compute mean and mean_sq
-        # we will manually backprop those in hooks
-        self.mean = mean.clone()
-        self.mean_sq = mean_sq.clone()
-        self.mean.register_hook(lambda grad: mean.backward(grad, retain_graph = True))  # new code
-        self.mean_sq.register_hook(lambda grad: mean_sq.backward(grad, retain_graph = True))  # new code
-        # compute reference output
-        out = self._normalize(x, mean, mean_sq)
-        self.reference_output = out.detach_()  # change, just to remove unnecessary saved graph
-        return mean, mean_sq
-
-    def get_ref_batch_stats(self):
-        return self.mean, self.mean_sq
+class GaussianNoise(nn.Module):
+    def __init__(self, stddev=0.05):
+        super().__init__()
+        self.stddev = stddev
 
     def forward(self, x):
-        if self.reference_output is None:
-            ref_mean, ref_mean_sq = self.initialize(x)
-        else:
-            ref_mean, ref_mean_sq = self.get_ref_batch_stats()
-        new_coeff = 1. / (self.batch_size + 1.)
-        old_coeff = 1. - new_coeff
-        new_mean = x.mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
-        new_mean_sq = (x**2).mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
-        mean = new_coeff * new_mean + old_coeff * ref_mean  # change
-        mean_sq = new_coeff * new_mean_sq + old_coeff * ref_mean_sq  # change
-        x = self._normalize(x, mean, mean_sq)
-        return x
+        if not self.training: return x
+        self.noise.normal_(0, std=self.std)
 
-    def _normalize(self, x, mean, mean_sq):
-        assert self.eps is not None
-        assert mean_sq is not None
-        assert mean is not None
-        assert len(x.size()) == 4
-        std = torch.sqrt(self.eps + mean_sq - mean**2)
-        x = x - mean
-        x = x / std
-        x = x * self.gamma
-        x = x + self.beta
-        return x
-
-    def __repr__(self):
-        return ('{name}(num_features={num_features}, eps={eps}'.format(
-            name=self.__class__.__name__, **self.__dict__))
+        return x + torch.Tensor(torch.randn(x.size()) * self.stddev)
 
 
 class VBN2d(nn.Module):

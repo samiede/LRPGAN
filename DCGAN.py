@@ -217,13 +217,13 @@ class DiscriminatorNet(nn.Module):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-generator = dcgm.GeneratorNetVBN(nc, ngf, ngpu, ref_noise).to(gpu)
+generator = dcgm.GeneratorNetLessCheckerboardTips(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
 
 # discriminator = DiscriminatorNet(ngpu).to(gpu)
-discriminator = dcgm.DiscriminatorNetVBN(nc, ndf, alpha, beta, ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardTips(nc, ndf, alpha, beta, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     discriminator.load_state_dict(torch.load(opt.loadG))
