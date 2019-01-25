@@ -20,28 +20,24 @@ class GeneratorNetLessCheckerboardTips(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
 
-            nnrd.GaussianNoise(),
             nn.Conv2d(ngf * 8, ngf * 8, 3, 1, 1),
             nn.BatchNorm2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
 
             # state size. (ngf*8) x 4 x 4
-            nnrd.GaussianNoise(),
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
             nn.BatchNorm2d(ngf * 4),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
 
             # state size. (ngf*4) x 8 x 8
-            nnrd.GaussianNoise(),
             nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1),
             nn.BatchNorm2d(ngf * 2),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
 
             # state size. (ngf*2) x 16 x 16
-            nnrd.GaussianNoise(),
             nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1),
             nn.BatchNorm2d(ngf),
             nn.LeakyReLU(0.2, inplace=True),
