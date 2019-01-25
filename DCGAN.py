@@ -309,16 +309,16 @@ for epoch in range(opt.epochs):
             #        test_fake.requires_grad = True
 
             # set ngpu to one, so relevance propagation works
-            if (opt.ngpu > 1):
-                discriminator.setngpu(1)
+            # if (opt.ngpu > 1):
+            #     discriminator.setngpu(1)
 
             # eval needs to be set so batch norm works with batch size of 1
             test_result = discriminator(test_fake)
             # test_relevance = discriminator.relprop()
 
             # set ngpu back to opt.ngpu
-            if (opt.ngpu > 1):
-                discriminator.setngpu(opt.ngpu)
+            # if (opt.ngpu > 1):
+            #     discriminator.setngpu(opt.ngpu)
 
             # Add up relevance of all color channels
             # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
