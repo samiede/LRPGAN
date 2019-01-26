@@ -119,7 +119,8 @@ class Logger:
                 grid = grid.cpu()
             plt.imshow(np.moveaxis(grid.numpy(), 0, -1))
             plt.axis('off')
-            self._save_images(fig, epoch, n_batch)
+            comment = '{0.4f}/{0.4f}'.format(fake_prop.item(), real_prop.item())
+            self._save_images(fig, epoch, n_batch, comment=comment)
             plt.close()
 
         else:
@@ -154,7 +155,7 @@ class Logger:
 
             index += 2
 
-        fig.savefig('{}/{}epoch_{}_batch_{}.pdf'.format(out_dir, comment, epoch, n_batch), dpi=100)
+        fig.savefig('{}/epoch_{}_batch_{}_{}.pdf'.format(out_dir, epoch, n_batch, comment), dpi=100)
         plt.close()
 
     def _save_images(self, fig, epoch, n_batch, comment=''):
