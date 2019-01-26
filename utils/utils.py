@@ -6,6 +6,8 @@ from tensorboardX import SummaryWriter
 from IPython import display
 import torch
 from matplotlib import pyplot as plt
+from matplotlib import gridspec
+
 
 if torch.cuda.is_available():
     plt.switch_backend('agg')
@@ -26,7 +28,6 @@ class Logger:
         self.data_name = data_name
 
         self.comment = '{}_{}'.format(model_name, data_name)
-        # self.data_subdir = '{}/{}'.format(model_name, data_name)
         self.data_subdir = '{}/{}'.format(dir_name, data_name)
         self.log_subdir = '{}/{}'.format(dir_name, 'runs/')
 
@@ -47,10 +48,12 @@ class Logger:
         self.writer.add_scalar(
             '{}/G_error'.format(self.comment), g_error, step)
 
-    def log_images(self, images, relevance, num_images, epoch, n_batch, num_batches, format='NCHW', normalize=True):
+    def log_images(self, images, relevance, num_images, epoch, n_batch, num_batches,
+                   fake_prop=None, real_prop=None, format='NCHW', normalize=True, noLabel=False):
         """
         input images are expected in format (NCHW)
         """
+
         relevance = visualize(relevance.cpu().numpy() if torch.cuda.is_available()
                               else relevance.numpy(), heatmap)
 
@@ -70,7 +73,13 @@ class Logger:
         if torch.cuda.is_available():
             images = images.cuda()
             relevance = relevance.cuda()
-        images = torch.cat((images, relevance))
+
+        # concat images and relevance in comb pattern
+        images_comb = torch.Tensor()
+        for pair in zip(images, relevance):
+            comb = torch.cat((pair[0].unsqueeze(0), pair[1].unsqueeze(0)))
+            images_comb = torch.cat((images_comb, comb))
+        images = images_comb
 
         # Make horizontal grid from image tensor
         horizontal_grid = vutils.make_grid(
@@ -78,41 +87,78 @@ class Logger:
         # Make vertical grid from image tensor
         nrows = int(np.sqrt(num_images))
         grid = vutils.make_grid(
-            images, nrow=nrows, normalize=True, scale_each=True, pad_value=1)
+            images, nrow=2, normalize=True, scale_each=True, pad_value=1)
 
         # Add horizontal images to tensorboard
         self.writer.add_image(img_name, horizontal_grid, step)
 
         # Save plots
-        self.save_torch_images(horizontal_grid, grid, epoch, n_batch)
+        self.save_torch_images(horizontal_grid, grid, epoch, n_batch, images_comb, fake_prop, real_prop, noLabel)
 
-
-    def save_torch_images(self, horizontal_grid, grid, epoch, n_batch, plot_horizontal=True):
+    def save_torch_images(self, horizontal_grid, grid, epoch, n_batch, images, fake_prop, real_prop, noLabel,
+                          plot_horizontal=False):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
 
-        # Plot and save horizontal
-        fig = plt.figure(figsize=(32, 16), facecolor='white')
-        if torch.cuda.is_available():
-            horizontal_grid = horizontal_grid.cpu()
-        plt.imshow(np.moveaxis(horizontal_grid.numpy(), 0, -1))
-        plt.axis('off')
-        if plot_horizontal:
-            display.display(plt.gcf())
-        self._save_images(fig, epoch, n_batch, 'hori')
-        plt.close()
+        if noLabel:
+            # Plot and save horizontal
+            if plot_horizontal:
+                fig = plt.figure(figsize=(32, 16), facecolor='white')
+                if torch.cuda.is_available():
+                    horizontal_grid = horizontal_grid.cpu()
+                plt.imshow(np.moveaxis(horizontal_grid.numpy(), 0, -1))
+                plt.axis('off')
+                display.display(plt.gcf())
+                self._save_images(fig, epoch, n_batch, 'hori_')
+                plt.close()
 
-        # Save squared
-        # fig = plt.figure()
-        # plt.imshow(np.moveaxis(grid.numpy(), 0, -1))
-        # plt.axis('off')
-        # self._save_images(fig, epoch, n_batch)
-        # plt.close()
+            # Save squared
+
+            fig = plt.figure(figsize=(32, 32), facecolor='white')
+            if torch.cuda.is_available():
+                grid = grid.cpu()
+            plt.imshow(np.moveaxis(grid.numpy(), 0, -1))
+            plt.axis('off')
+            self._save_images(fig, epoch, n_batch)
+            plt.close()
+
+        else:
+            self._save_subplots(images, fake_prop, real_prop, epoch, n_batch)
+
+    def _save_subplots(self, images, fake_prop, real_prop, epoch, n_batch, comment=''):
+        out_dir = '{}'.format(self.data_subdir)
+        Logger._make_dir(out_dir)
+
+        num_plots = images.size(0) // 2
+        cols = 2
+        fig, axarr = plt.subplots(num_plots, cols)
+        fig = plt.gcf()
+        fig.set_size_inches(64, 64)
+        index = 0
+        for n in range(0, num_plots):
+            image = vutils.make_grid(images[index], normalize=True, scale_each=True, pad_value=1)
+            axarr[n, 0].imshow(np.moveaxis(image.numpy(), 0, -1))
+            axarr[n, 0].axis('off')
+            if n % 2 == 0:
+                axarr[n, 0].set_title(fake_prop.item(), fontsize=50)
+            else:
+                axarr[n, 0].set_title(real_prop.item(), fontsize=50)
+            ttl = axarr[n, 0].title
+            ttl.set_position([.5, 1.05])
+
+            image = vutils.make_grid(images[index + 1], normalize=True, scale_each=True, pad_value=1)
+            axarr[n, 1].imshow(np.moveaxis(image.numpy(), 0, -1))
+            axarr[n, 1].axis('off')
+
+            index += 2
+
+        fig.savefig('{}/{}epoch_{}_batch_{}.pdf'.format(out_dir, comment, epoch, n_batch), dpi=100)
+        plt.close()
 
     def _save_images(self, fig, epoch, n_batch, comment=''):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
-        fig.savefig('{}/{}_epoch_{}_batch_{}.png'.format(out_dir, comment, epoch, n_batch), dpi=50)
+        fig.savefig('{}/{}epoch_{}_batch_{}.png'.format(out_dir, comment, epoch, n_batch), dpi=50)
 
     @staticmethod
     def display_status(epoch, num_epochs, n_batch, num_batches, d_error, g_error, d_pred_real, d_pred_fake):
@@ -203,7 +249,6 @@ def visualize(x, colormap):
     else:
         x = x.reshape([N, x.shape[2], x.shape[3], 3])
     return x
-
 
     # x = np.pad(x, ((0, 0), (0, 0), (2, 2), (2, 2), (0, 0)), 'constant', constant_values=1)
     # x = x.transpose([0, 2, 1, 3, 4]).reshape([1 * 32, N * 32, 3])
