@@ -260,8 +260,10 @@ for epoch in range(opt.epochs):
             )
 
             # show images inline
+            comment = '{0.4f}-{0.4f}'.format(test_result.item(), real_test_result.item())
+
             subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
-                             outf + '/mnist/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
+                             outf + '/mnist/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment +  '.png'])
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)
