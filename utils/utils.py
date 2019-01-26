@@ -99,7 +99,7 @@ class Logger:
                           plot_horizontal=False):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
-        comment = '{0.4f}-{0.4f}'.format(fake_prop.item(), real_prop.item())
+        comment = '{0:.4f}-{0:.4f}'.format(fake_prop.item(), real_prop.item())
 
         if noLabel:
             # Plot and save horizontal
