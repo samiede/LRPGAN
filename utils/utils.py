@@ -99,6 +99,7 @@ class Logger:
                           plot_horizontal=False):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
+        comment = '{0.4f}-{0.4f}'.format(fake_prop.item(), real_prop.item())
 
         if noLabel:
             # Plot and save horizontal
@@ -119,11 +120,11 @@ class Logger:
                 grid = grid.cpu()
             plt.imshow(np.moveaxis(grid.numpy(), 0, -1))
             plt.axis('off')
-            self._save_images(fig, epoch, n_batch)
+            self._save_images(fig, epoch, n_batch, comment=comment)
             plt.close()
 
         else:
-            self._save_subplots(images, fake_prop, real_prop, epoch, n_batch)
+            self._save_subplots(images, fake_prop, real_prop, epoch, n_batch, comment=comment)
 
     def _save_subplots(self, images, fake_prop, real_prop, epoch, n_batch, comment=''):
         out_dir = '{}'.format(self.data_subdir)
@@ -154,13 +155,15 @@ class Logger:
 
             index += 2
 
-        fig.savefig('{}/{}epoch_{}_batch_{}.pdf'.format(out_dir, comment, epoch, n_batch), dpi=100)
+        fig.savefig('{}/epoch_{}_batch_{}_{}.png'.format(out_dir, epoch, n_batch, comment), dpi=50)
+        fig.savefig('{}/epoch_{}_batch_{}_{}.pdf'.format(out_dir, epoch, n_batch, comment), dpi=100)
         plt.close()
 
     def _save_images(self, fig, epoch, n_batch, comment=''):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
-        fig.savefig('{}/{}epoch_{}_batch_{}.png'.format(out_dir, comment, epoch, n_batch), dpi=50)
+        fig.savefig('{}/epoch_{}_batch_{}_{}.png'.format(out_dir, epoch, n_batch, comment), dpi=50)
+        fig.savefig('{}/epoch_{}_batch_{}_{}.pdf'.format(out_dir, epoch, n_batch, comment), dpi=100)
 
     @staticmethod
     def display_status(epoch, num_epochs, n_batch, num_batches, d_error, g_error, d_pred_real, d_pred_fake):
