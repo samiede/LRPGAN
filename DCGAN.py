@@ -35,6 +35,8 @@ parser.add_argument('--alpha', default=1, type=int)
 parser.add_argument('--beta', default=None, type=float)
 parser.add_argument('--lflip', help='Flip the labels during training', action='store_true')
 parser.add_argument('--nolabel', help='Print the images without labeling of probabilities', action='store_true')
+parser.add_argument('--freezeG', help='Freezes training for G after epochs / 3 epochs', action='store_true')
+parser.add_argument('--freezeD', help='Freezes training for D after epochs / 3 epochs', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -180,7 +182,6 @@ for epoch in range(opt.epochs):
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
         label_real = discriminator_target(batch_size).to(gpu)
-
         # save input without noise for relevance comparison
         real_test = real_data[0].clone().unsqueeze(0)
         # Add noise to input
@@ -202,7 +203,10 @@ for epoch in range(opt.epochs):
         d_err_fake.backward()
         d_fake_1 = prediction_fake.mean().item()
         d_error_total = d_err_real + d_err_fake
-        d_optimizer.step()
+
+        # only update uf we don't freeze discriminator
+        if not opt.freezeD or (opt.freezeD and epoch <= opt.epochs // 3):
+            d_optimizer.step()
 
         ############################
         # Train Generator
@@ -212,7 +216,10 @@ for epoch in range(opt.epochs):
         g_err = loss(prediction_fake_g, label_real)
         g_err.backward()
         d_fake_2 = prediction_fake_g.mean().item()
-        g_optimizer.step()
+
+        #only update if we don't freeze generator
+        if not opt.freezeD or (opt.freezeD and epoch <= opt.epochs // 3):
+            g_optimizer.step()
 
         logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
