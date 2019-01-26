@@ -218,7 +218,7 @@ for epoch in range(opt.epochs):
         d_fake_2 = prediction_fake_g.mean().item()
 
         #only update if we don't freeze generator
-        if not opt.freezeD or (opt.freezeD and epoch <= opt.epochs // 3):
+        if not opt.freezeG or (opt.freezeG and epoch <= opt.epochs // 3):
             g_optimizer.step()
 
         logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
