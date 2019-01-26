@@ -128,6 +128,8 @@ class Logger:
     def _save_subplots(self, images, fake_prop, real_prop, epoch, n_batch, comment=''):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
+        if torch.cuda.is_available():
+            images = images.cpu()
 
         num_plots = images.size(0) // 2
         cols = 2
