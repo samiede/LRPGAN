@@ -33,6 +33,8 @@ parser.add_argument('--loadG', default='', help='path to generator (to continue 
 parser.add_argument('--loadD', default='', help='path to discriminator (to continue training')
 parser.add_argument('--alpha', default=1, type=int)
 parser.add_argument('--beta', default=None, type=float)
+parser.add_argument('--lflip', help='Flip the labels during training', action='store_true')
+parser.add_argument('--nolabel', help='Print the images without labeling of probabilities', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -105,7 +107,9 @@ def discriminator_target(size):
     Tensor containing soft labels, with shape = size
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size).uniform_(0.7, 1.0)
+    if not opt.lflip:
+        return torch.Tensor(size).uniform_(0.7, 1.0)
+    return torch.Tensor(size).zero_()
 
 
 def generator_target(size):
@@ -115,8 +119,9 @@ def generator_target(size):
     :return: zeros tensor
     """
     # noinspection PyUnresolvedReferences
-    # return torch.Tensor(size).uniform_(0.0, 0.3)
-    return torch.Tensor(size).zero_()
+    if not opt.lflip:
+        return torch.Tensor(size).zero_()
+    return torch.Tensor(size).uniform_(0.7, 1.0)
 
 
 # init networks
@@ -176,6 +181,8 @@ for epoch in range(opt.epochs):
         real_data = batch_data.to(gpu)
         label_real = discriminator_target(batch_size).to(gpu)
 
+        # save input without noise for relevance comparison
+        real_test = real_data[0].clone().unsqueeze(0)
         # Add noise to input
         real_data = added_gaussian(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
@@ -230,21 +237,31 @@ for epoch in range(opt.epochs):
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
 
+            # Relevance propagation on real image
+            real_test.requires_grad = True
+            real_test_result = discriminator(real_test)
+            real_test_relevance = discriminator.relprop()
+
+
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
+
+            test_fake = torch.cat((test_fake, real_test))
+            test_relevance = torch.cat((test_relevance, real_test_relevance))
 
             img_name = logger.log_images(
-                test_fake.detach(), test_relevance.detach(), 1,
-                epoch, n_batch, len(dataloader)
+                test_fake.detach(), test_relevance.detach(), test_fake.size(0),
+                epoch, n_batch, len(dataloader), test_result, real_test_result, noLabel=opt.nolabel
             )
 
             # show images inline
             subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
-                             outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
+                             outf + '/mnist/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)
