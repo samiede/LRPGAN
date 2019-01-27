@@ -1,4 +1,5 @@
 import os
+import shutil
 import numpy as np
 import errno
 import torchvision.utils as vutils
@@ -30,6 +31,9 @@ class Logger:
         self.comment = '{}_{}'.format(model_name, data_name)
         self.data_subdir = '{}/{}'.format(dir_name, data_name)
         self.log_subdir = '{}/{}'.format(dir_name, 'runs/')
+
+        out_dir = '{}'.format(self.data_subdir)
+        Logger._make_fresh_dir(out_dir)
 
         # TensorBoard
         self.writer = SummaryWriter(log_dir=self.log_subdir, comment=self.comment)
@@ -161,7 +165,7 @@ class Logger:
 
     def _save_images(self, fig, epoch, n_batch, comment=''):
         out_dir = '{}'.format(self.data_subdir)
-        Logger._make_dir(out_dir)
+        # Logger._make_dir(out_dir)
         fig.savefig('{}/epoch_{}_batch_{}_{}.png'.format(out_dir, epoch, n_batch, comment), dpi=50)
         fig.savefig('{}/epoch_{}_batch_{}_{}.pdf'.format(out_dir, epoch, n_batch, comment), dpi=100)
 
@@ -203,6 +207,18 @@ class Logger:
 
     @staticmethod
     def _make_dir(directory):
+        try:
+            os.makedirs(directory)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+
+    @staticmethod
+    def _make_fresh_dir(directory):
+        try:
+            shutil.rmtree(directory)
+        except OSError:
+            pass
         try:
             os.makedirs(directory)
         except OSError as e:
