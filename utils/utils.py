@@ -153,15 +153,8 @@ class Logger:
             ttl.set_position([.5, 1.05])
 
             image = vutils.make_grid(images[index + 1], scale_each=True, pad_value=1)
-            # from matplotlib import cm
-            # data = np.moveaxis(image.numpy(), 0, -1)
-            # im = axarr[n, 1].imshow(data, cmap=cm.coolwarm)
-            # from numpy.random import randn
-            #
-            # divider = make_axes_locatable(axarr[n, 1])
-            # cax = divider.append_axes("right", size="5%", pad=0.15)
-            # cbar = fig.colorbar(im, cax=cax, )
-            # cbar.ax.tick_params(labelsize=100)
+            data = np.moveaxis(image.numpy(), 0, -1)
+            axarr[n, 1].imshow(data)
             axarr[n, 1].axis('off')
 
             index += 2
