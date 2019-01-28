@@ -20,6 +20,8 @@ class FirstConvolution(nn.Conv2d):
 
     def relprop(self, R):
 
+        print('first', len(R[R < 0]))
+
         if type(R) is tuple:
 
             R, params = R
@@ -31,9 +33,7 @@ class FirstConvolution(nn.Conv2d):
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
-            # Include positive biases as neurons
-            # iself_biases = copy.deepcopy(iself.bias.data)
-            # iself_biases = beta + gamma * (iself_biases - mean) * gamma
+
             iself.bias.data *= 0
             iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
                                 * var.view(-1, 1, 1, 1).expand_as(iself.weight)
@@ -41,9 +41,7 @@ class FirstConvolution(nn.Conv2d):
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
-            # Include positive biases as neurons
-            # nself_biases = copy.deepcopy(nself.bias.data)
-            # nself_biases = beta + gamma * (nself_biases - mean) * gamma
+
             nself.bias.data *= 0
             nself.weight.data = nself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(nself.weight) \
                                 * var.view(-1, 1, 1, 1).expand_as(nself.weight)
@@ -52,10 +50,7 @@ class FirstConvolution(nn.Conv2d):
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
-            # Include positive biases as neurons to normalize over
-            # pself_biases = copy.deepcopy(pself.bias.data)
-            # incorporate batch norm
-            # pself_biases = beta + gamma * (pself_biases - mean) * gamma
+
             pself.bias.data *= 0
             pself.weight.data = pself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(pself.weight) \
                                 * var.view(-1, 1, 1, 1).expand_as(pself.weight)
@@ -66,17 +61,8 @@ class FirstConvolution(nn.Conv2d):
             H = pself.X.fill_(utils.highest)
 
             iself_f = iself.forward(X)
-            # Expand bias for addition
-            # iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).view(1, -1, 1, 1).expand_as(iself_f)
-            # iself_f = iself_f + iself_biases
             pself_f = pself.forward(L)
-            # Expand bias for addition
-            # pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(pself_f)
-            # pself_f = pself_f + pself_biases
             nself_f = nself.forward(H)
-            # Expand bias for addition
-            # nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(nself_f)
-            # nself_f = nself_f + nself_biases
 
             Z = iself_f - pself_f - nself_f + 1e-9
             S = R / Z
@@ -92,23 +78,20 @@ class FirstConvolution(nn.Conv2d):
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
-            # Include positive biases as neurons
-            # iself_biases = copy.deepcopy(iself.bias.data)
+
             iself.bias.data *= 0
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
-            # Include positive biases as neurons
-            # nself_biases = copy.deepcopy(nself.bias.data)
+
             nself.bias.data *= 0
             nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
-            # Include positive biases as neurons
-            # pself_biases = copy.deepcopy(pself.bias.data)
+
             pself.bias.data *= 0
             pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
@@ -117,20 +100,12 @@ class FirstConvolution(nn.Conv2d):
             H = pself.X.fill_(utils.highest)
 
             iself_f = iself.forward(X)
-            # Expand bias for addition
-            # iself_biases = torch.max(torch.Tensor(1).zero_(), iself_biases).view(1, -1, 1, 1).expand_as(iself_f)
-            # iself_f = iself_f + iself_biases
             pself_f = pself.forward(L)
-            # Expand bias for addition
-            # pself_biases = torch.max(torch.Tensor(1).zero_(), pself_biases).view(1, -1, 1, 1).expand_as(pself_f)
-            # pself_f = pself_f + pself_biases
             nself_f = nself.forward(H)
-            # Expand bias for addition
-            # nself_biases = torch.max(torch.Tensor(1).zero_(), nself_biases).view(1, -1, 1, 1).expand_as(nself_f)
-            # nself_f = nself_f + nself_biases
 
             Z = iself_f - pself_f - nself_f + 1e-9
             S = R / Z
+
 
             iself_b = torch.autograd.grad(iself_f, X, S, retain_graph=True)[0]
             pself_b = torch.autograd.grad(pself_f, L, S, retain_graph=True)[0]
@@ -233,11 +208,13 @@ class NextConvolution(nn.Conv2d):
 
             ZB = nself(nX)
             SB = - nself.beta * torch.div(R, ZB)
+            ones = torch.Tensor([[1, 1], [1, 1]]).unsqueeze(0).unsqueeze(0)
 
+            # C1 = torch.autograd.grad(ZA, pX, ones, retain_graph=True)[0] + torch.autograd.grad(ZB, nX, SB, retain_graph=True)[0]
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
-        return R.detach()
+        return R
 
 
 class ReLu(nn.ReLU):
@@ -280,7 +257,8 @@ class VBN2d(nn.Module):
     Implementation borrowed and modified from Rafael_Valle's code + help of SimonW from this discussion thread:
     https://discuss.pytorch.org/t/parameter-grad-of-conv-weight-is-none-after-virtual-batch-normalization/9036
     """
-    def __init__(self, num_features: int, eps: float=1e-5):
+
+    def __init__(self, num_features: int, eps: float = 1e-5):
         super().__init__()
         # batch statistics
         self.num_features = num_features
@@ -307,7 +285,7 @@ class VBN2d(nn.Module):
         mean_sq = (x ** 2).mean(3, keepdim=True).mean(2, keepdim=True).mean(0, keepdim=True)
         return mean, mean_sq
 
-    def forward(self, x, ref_mean: None, ref_mean_sq : None):
+    def forward(self, x, ref_mean: None, ref_mean_sq: None):
         """
         Forward pass of virtual batch normalization.
         Virtual batch normalization require two forward passes
@@ -351,14 +329,14 @@ class VBN2d(nn.Module):
         assert len(x.size()) == 4  # specific for 2d VBN
         if mean.size(1) != self.num_features:
             raise Exception(
-                    'Mean size not equal to number of featuers : given {}, expected {}'
+                'Mean size not equal to number of featuers : given {}, expected {}'
                     .format(mean.size(1), self.num_features))
         if mean_sq.size(1) != self.num_features:
             raise Exception(
-                    'Squared mean tensor size not equal to number of features : given {}, expected {}'
+                'Squared mean tensor size not equal to number of features : given {}, expected {}'
                     .format(mean_sq.size(1), self.num_features))
 
-        std = torch.sqrt(self.eps + mean_sq - mean**2)
+        std = torch.sqrt(self.eps + mean_sq - mean ** 2)
         x = x - mean
         x = x / std
         x = x * self.gamma
@@ -368,8 +346,6 @@ class VBN2d(nn.Module):
     def __repr__(self):
         return ('{name}(num_features={num_features}, eps={eps}'
                 .format(name=self.__class__.__name__, **self.__dict__))
-
-
 
 
 class Dropout(nn.Dropout):
