@@ -20,8 +20,6 @@ class FirstConvolution(nn.Conv2d):
 
     def relprop(self, R):
 
-        print('first', len(R[R < 0]))
-
         if type(R) is tuple:
 
             R, params = R
@@ -105,7 +103,6 @@ class FirstConvolution(nn.Conv2d):
 
             Z = iself_f - pself_f - nself_f + 1e-9
             S = R / Z
-
 
             iself_b = torch.autograd.grad(iself_f, X, S, retain_graph=True)[0]
             pself_b = torch.autograd.grad(pself_f, L, S, retain_graph=True)[0]
@@ -210,7 +207,6 @@ class NextConvolution(nn.Conv2d):
             SB = - nself.beta * torch.div(R, ZB)
             ones = torch.Tensor([[1, 1], [1, 1]]).unsqueeze(0).unsqueeze(0)
 
-            # C1 = torch.autograd.grad(ZA, pX, ones, retain_graph=True)[0] + torch.autograd.grad(ZB, nX, SB, retain_graph=True)[0]
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
