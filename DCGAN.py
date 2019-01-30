@@ -259,18 +259,20 @@ for epoch in range(opt.epochs):
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
             real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
 
-            # test_fake = torch.cat((test_fake, real_test))
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
             test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
-            # test_relevance = torch.cat((test_relevance, real_test_relevance))
+            printdata = {'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
+                         'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
+                         'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
+
 
             img_name = logger.log_images(
                 test_fake.detach(), test_relevance.detach(), test_fake.size(0),
-                epoch, n_batch, len(dataloader), test_result, real_test_result, noLabel=opt.nolabel
+                epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
             # show images inline
-            comment = '{:.4f}-{:.4f}'.format(test_result.item(), real_test_result.item())
+            comment = '{:.4f}-{:.4f}'.format(printdata['test_result'], printdata['real_test_result'])
 
             subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
                              outf + '/mnist/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
