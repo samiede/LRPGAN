@@ -52,7 +52,7 @@ class Logger:
             '{}/G_error'.format(self.comment), g_error, step)
 
     def log_images(self, images, relevance, num_images, epoch, n_batch, num_batches,
-                   fake_prop=None, real_prop=None, format='NCHW', normalize=True, noLabel=False):
+                   printdata, format='NCHW', normalize=True, noLabel=False):
         """
         input images are expected in format (NCHW)
         """
@@ -96,13 +96,13 @@ class Logger:
         self.writer.add_image(img_name, horizontal_grid, step)
 
         # Save plots
-        self.save_torch_images(horizontal_grid, grid, epoch, n_batch, images_comb, fake_prop, real_prop, noLabel)
+        self.save_torch_images(horizontal_grid, grid, epoch, n_batch, images_comb, printdata, noLabel)
 
-    def save_torch_images(self, horizontal_grid, grid, epoch, n_batch, images, fake_prop, real_prop, noLabel,
+    def save_torch_images(self, horizontal_grid, grid, epoch, n_batch, images, printdata, noLabel,
                           plot_horizontal=False):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
-        comment = '{:.4f}-{:.4f}'.format(fake_prop.item(), real_prop.item())
+        comment = '{:.4f}-{:.4f}'.format(printdata['test_result'], printdata['real_test_result'])
 
         if noLabel:
             # Plot and save horizontal
@@ -127,9 +127,9 @@ class Logger:
             plt.close()
 
         else:
-            self._save_subplots(images, fake_prop, real_prop, epoch, n_batch, comment=comment)
+            self._save_subplots(images, printdata, epoch, n_batch, comment=comment)
 
-    def _save_subplots(self, images, fake_prop, real_prop, epoch, n_batch, comment=''):
+    def _save_subplots(self, images, printdata, epoch, n_batch, comment=''):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
         if torch.cuda.is_available():
@@ -146,15 +146,22 @@ class Logger:
             axarr[n, 0].imshow(np.moveaxis(image.numpy(), 0, -1))
             axarr[n, 0].axis('off')
             if n % 2 == 0:
-                axarr[n, 0].set_title(fake_prop.item(), fontsize=50)
+                axarr[n, 0].set_title('{:.6f}'.format(printdata['test_result']), fontsize=50)
             else:
-                axarr[n, 0].set_title(real_prop.item(), fontsize=50)
+                axarr[n, 0].set_title('{:.6f}'.format(printdata['real_test_result']), fontsize=50)
             ttl = axarr[n, 0].title
             ttl.set_position([.5, 1.05])
 
             image = vutils.make_grid(images[index + 1], scale_each=True, pad_value=1)
             data = np.moveaxis(image.numpy(), 0, -1)
             axarr[n, 1].imshow(data)
+            ttl = axarr[n, 1].title
+            ttl.set_position([.5, 1.05])
+
+            if n % 2 == 0:
+                axarr[n, 1].set_title('{:.5f} / {:.5f}'.format(printdata['min_test_rel'], printdata['max_test_rel']), fontsize=50)
+            else:
+                axarr[n, 1].set_title('{:.5f} / {:.5f}'.format(printdata['min_real_rel'], printdata['max_real_rel']), fontsize=50)
             axarr[n, 1].axis('off')
 
             index += 2
