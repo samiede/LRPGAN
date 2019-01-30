@@ -48,7 +48,7 @@ ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
 beta = opt.beta
-p = opt.imageSize//2
+p = 2
 print(opt)
 
 try:
@@ -180,7 +180,7 @@ for epoch in range(opt.epochs):
         # train with real
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
-        real_data = F.pad(real_data, (p, p, p, p))
+        real_data = F.pad(real_data, (p, p, p, p), value=-1)
         label_real = discriminator_target(batch_size).to(gpu)
         # save input without noise for relevance comparison
         real_test = real_data[0].clone().unsqueeze(0)
@@ -198,7 +198,7 @@ for epoch in range(opt.epochs):
 
         # Add noise to fake data
         fake = added_gaussian(fake, add_noise_var)
-        fake = F.pad(fake, (p, p, p, p))
+        fake = F.pad(fake, (p, p, p, p), value=-1)
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
         d_err_fake.backward()
@@ -232,7 +232,7 @@ for epoch in range(opt.epochs):
         if n_batch % 100 == 0:
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
-            test_fake = F.pad(test_fake, (p, p, p, p))
+            test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
 
             # TODO:
             # - try: test_fake = test_fake.detach()
@@ -259,8 +259,10 @@ for epoch in range(opt.epochs):
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
             real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
 
+            # test_fake = torch.cat((test_fake, real_test))
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
             test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
+            # test_relevance = torch.cat((test_relevance, real_test_relevance))
 
             img_name = logger.log_images(
                 test_fake.detach(), test_relevance.detach(), test_fake.size(0),

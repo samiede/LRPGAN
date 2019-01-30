@@ -487,7 +487,7 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
         self.ngpu = ngpu
         self.net = nnrd.RelevanceNet(
             nnrd.Layer(
-                nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=5, stride=1, padding=2),
+                nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=5, stride=1, padding=0),
                 nnrd.ReLu(),
             ),
             nnrd.Layer(
@@ -511,12 +511,6 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
             ),            # state size. (ndf*2) x 16 x 16
-            nnrd.Layer(
-                nnrd.NextConvolution(in_channels=ndf * 4, out_channels=ndf * 4, kernel_size=4, name='2.5', stride=2, padding=1, alpha=alpha, beta=beta),
-                nnrd.BatchNorm2d(ndf * 4),
-                nnrd.ReLu(),
-                nnrd.Dropout(0.3),
-            ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2, padding=1, alpha=alpha, beta=beta),
