@@ -176,15 +176,19 @@ class NextConvolution(nn.Conv2d):
 
             ZA = pself(pX)
             SA = pself.alpha * torch.div(R, ZA)
+            print(self.name, 'SA', len(SA[SA < 0 ]))
 
             ZB = nself(nX)
             SB = - nself.beta * torch.div(R, ZB)
+            print(self.name, 'SB', len(SB[SB < 0 ]))
 
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pself.X * C
 
         # If not, continue as usual
         else:
+
+            print(self.name, 'in: ', len(R[R < 0]))
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
