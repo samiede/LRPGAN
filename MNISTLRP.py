@@ -179,7 +179,7 @@ for epoch in range(opt.epochs):
             print(label)
 
             idx = label.nonzero()
-            if len(idx == 0):
+            if len(idx) == 0:
                 idx = 0
             else:
                 idx = idx[0].item()
@@ -196,7 +196,8 @@ for epoch in range(opt.epochs):
             test_relevance = discriminator.relprop()
 
             idx = (label == 0).nonzero()
-            if len(idx == 0):
+            print(idx)
+            if len(idx) == 0:
                 idx = 0
             else:
                 idx = idx[0].item()
