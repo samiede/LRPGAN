@@ -176,7 +176,6 @@ for epoch in range(opt.epochs):
                      d_real, d_real, d_real, d_real, d_real))
 
         if n_batch % 100 == 0:
-            print(label)
 
             idx = label.nonzero()
             if len(idx) == 0:
@@ -196,7 +195,6 @@ for epoch in range(opt.epochs):
             test_relevance = discriminator.relprop()
 
             idx = (label == 0).nonzero()
-            print(idx)
             if len(idx) == 0:
                 idx = 0
             else:
