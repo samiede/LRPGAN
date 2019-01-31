@@ -182,7 +182,7 @@ for epoch in range(opt.epochs):
             else:
                 idx = idx[0]
 
-            test_fake = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0)
+            test_fake = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0).to(gpu)
             test_fake.requires_grad = True
 
             # set ngpu to one, so relevance propagation works
@@ -200,7 +200,7 @@ for epoch in range(opt.epochs):
                 idx = idx[0]
 
             # Relevance propagation on real image
-            real_test = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0)
+            real_test = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0).to(gpu)
             real_test.requires_grad = True
             real_test_result = discriminator(real_test)
             real_test_relevance = discriminator.relprop()
