@@ -73,6 +73,8 @@ class FirstConvolution(nn.Conv2d):
 
         else:
 
+            print('first in: ', len(R[R<0]))
+
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
@@ -110,6 +112,8 @@ class FirstConvolution(nn.Conv2d):
 
             R = X * iself_b - L * pself_b - H * nself_b
 
+        print('first out: ', len(R[R < 0]))
+
         return R.detach()
 
 
@@ -138,6 +142,8 @@ class NextConvolution(nn.Conv2d):
         # Is the layer before Batch Norm?
         if type(R) is tuple:
             R, params = R
+
+            print(self.name, 'in: ', len(R[R<0]))
 
             gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
                                           params['mean']
@@ -210,6 +216,7 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
+        print(self.name, 'out: ', len(R[R < 0]))
         return R
 
 
@@ -228,7 +235,7 @@ class LeakyReLU(nn.LeakyReLU):
 class BatchNorm2d(nn.BatchNorm2d):
 
     def relprop(self, R):
-        # return R, self.getParams()
+        return R, self.getParams()
         return R
 
     def getParams(self):
