@@ -18,6 +18,7 @@ import modules.ModuleRedefinitions as nnrd
 import models._DCGAN as dcgm
 from utils.utils import Logger
 import subprocess
+import numpy as np
 
 # add parameters
 parser = argparse.ArgumentParser()
@@ -175,12 +176,13 @@ for epoch in range(opt.epochs):
                      d_real, d_real, d_real, d_real, d_real))
 
         if n_batch % 100 == 0:
+            print(label)
 
-            idx = label[label == 1]
+            idx = label.nonzero()
             if len(idx == 0):
                 idx = 0
             else:
-                idx = idx[0]
+                idx = idx[0][0]
 
             test_fake = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0).to(gpu)
             test_fake.requires_grad = True
@@ -193,11 +195,11 @@ for epoch in range(opt.epochs):
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
 
-            idx = label[label == 0]
+            idx = (label == 0).nonzero()
             if len(idx == 0):
                 idx = 0
             else:
-                idx = idx[0]
+                idx = idx[0][0]
 
             # Relevance propagation on real image
             real_test = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0).to(gpu)
