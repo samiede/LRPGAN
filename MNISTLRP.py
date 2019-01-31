@@ -160,7 +160,7 @@ for epoch in range(opt.epochs):
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
         real_data = F.pad(real_data, (p, p, p, p), value=-1)
-        label_real = discriminator_target(batch_size).to(gpu)
+        label = label.to(gpu)
         # save input without noise for relevance comparison
         # Add noise to input
         label = label.float()
@@ -182,7 +182,6 @@ for epoch in range(opt.epochs):
             else:
                 idx = idx[0]
 
-
             test_fake = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0)
             test_fake.requires_grad = True
 
@@ -199,7 +198,6 @@ for epoch in range(opt.epochs):
                 idx = 0
             else:
                 idx = idx[0]
-
 
             # Relevance propagation on real image
             real_test = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0)
