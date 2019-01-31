@@ -182,7 +182,7 @@ for epoch in range(opt.epochs):
             if len(idx == 0):
                 idx = 0
             else:
-                idx = idx[0][0]
+                idx = idx[0].item()
 
             test_fake = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0).to(gpu)
             test_fake.requires_grad = True
@@ -199,7 +199,7 @@ for epoch in range(opt.epochs):
             if len(idx == 0):
                 idx = 0
             else:
-                idx = idx[0][0]
+                idx = idx[0].item()
 
             # Relevance propagation on real image
             real_test = F.pad(batch_data[idx], (p, p, p, p), value=-1).unsqueeze(0).to(gpu)
