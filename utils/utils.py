@@ -166,7 +166,7 @@ class Logger:
 
             index += 2
 
-        fig.savefig('{}/epoch_{}_batch_{}_{}.png'.format(out_dir, epoch, n_batch, comment), dpi=50)
+        fig.savefig('{}/epoch_{}_batch_{}_{}.png'.format(out_dir, epoch, n_batch, comment), dpi=25)
         fig.savefig('{}/epoch_{}_batch_{}_{}.pdf'.format(out_dir, epoch, n_batch, comment), dpi=100)
         plt.close()
 
