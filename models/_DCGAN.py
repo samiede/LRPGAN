@@ -520,6 +520,7 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
             ),
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4', stride=1, padding=0),
+                nnrd.ReLu()
             ),
             # state size. (ndf*8) x 4 x 4
             nnrd.Layer(
