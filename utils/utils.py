@@ -159,9 +159,11 @@ class Logger:
             ttl.set_position([.5, 1.05])
 
             if n % 2 == 0:
-                axarr[n, 1].set_title('{:.5f} / {:.5f}'.format(printdata['min_test_rel'], printdata['max_test_rel']), fontsize=50)
+                axarr[n, 1].set_title('{:.5f} / {:.5f}'.format(printdata['min_test_rel'], printdata['max_test_rel']),
+                                      fontsize=50)
             else:
-                axarr[n, 1].set_title('{:.5f} / {:.5f}'.format(printdata['min_real_rel'], printdata['max_real_rel']), fontsize=50)
+                axarr[n, 1].set_title('{:.5f} / {:.5f}'.format(printdata['min_real_rel'], printdata['max_real_rel']),
+                                      fontsize=50)
             axarr[n, 1].axis('off')
 
             index += 2
@@ -269,7 +271,10 @@ def graymap(x):
 def visualize(x, colormap):
     N = len(x)
     assert (N <= 16)
-    x = colormap(x / np.abs(x).max())
+    try:
+        x = colormap(x / np.abs(x).max())
+    except ZeroDivisionError:
+        x = colormap(x)
 
     # Create a mosaic and upsample
     if len(x.shape) <= 3:

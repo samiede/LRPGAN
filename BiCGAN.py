@@ -3,9 +3,11 @@ from __future__ import print_function
 import argparse
 import os
 import sys
+import random
 import torch
 import torch.nn as nn
 import torch.nn.parallel
+import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import torch.utils.data
@@ -13,6 +15,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import modules.ModuleRedefinitions as nnrd
+import models._DCGAN as dcgm
 from utils.utils import Logger
 import subprocess
 
@@ -29,8 +32,12 @@ parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--imageSize', type=int, default=64)
 parser.add_argument('--loadG', default='', help='path to generator (to continue training')
 parser.add_argument('--loadD', default='', help='path to discriminator (to continue training')
-parser.add_argument('--alpha', default=1, type=int)
+parser.add_argument('--alpha', default=1, type=float)
 parser.add_argument('--beta', default=None, type=float)
+parser.add_argument('--lflip', help='Flip the labels during training', action='store_true')
+parser.add_argument('--nolabel', help='Print the images without labeling of probabilities', action='store_true')
+parser.add_argument('--freezeG', help='Freezes training for G after epochs / 3 epochs', action='store_true')
+parser.add_argument('--freezeD', help='Freezes training for D after epochs / 3 epochs', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -40,10 +47,8 @@ ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
-if opt.beta is not None:
-    beta = opt.beta
-else:
-    beta = opt.beta
+beta = opt.beta
+p = 2
 print(opt)
 
 try:
@@ -55,6 +60,7 @@ try:
     os.makedirs(checkpointdir)
 except OSError:
     pass
+
 
 # CUDA everything
 cudnn.benchmark = True
@@ -103,7 +109,13 @@ def discriminator_target(size):
     Tensor containing soft labels, with shape = size
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size).uniform_(0.8, 1.0)
+    if not opt.lflip:
+        target = torch.Tensor(size)
+        # target[0].uniform_(0.7, 1.0)
+        target.fill_(1)
+        # target[:, 1].fill_(0)
+        return target
+    return torch.Tensor(size).zero_()
 
 
 def generator_target(size):
@@ -113,7 +125,14 @@ def generator_target(size):
     :return: zeros tensor
     """
     # noinspection PyUnresolvedReferences
-    return torch.Tensor(size).zero_()
+    if not opt.lflip:
+        target = torch.Tensor(size)
+        # target[:, 0].fill_(0)
+        target.fill_(0)
+        # target[1].uniform_(0.7, 1.0)
+        # return torch.Tensor(size).zero_()
+        return target
+    return torch.Tensor(size).uniform_(0.7, 1.0)
 
 
 # init networks
@@ -127,109 +146,15 @@ def weights_init(m):
         m.bias.data.fill_(0)
 
 
-class GeneratorNet(nn.Module):
-    def __init__(self, ngpu):
-        super(GeneratorNet, self).__init__()
-        self.ngpu = ngpu
-        self.net = nn.Sequential(
-
-            nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0),
-            nn.BatchNorm2d(ngf * 8),
-            nn.LeakyReLU(0.2, inplace=True),
-
-            nn.Conv2d(ngf * 8, ngf * 8, 3, 1, 1),
-            nn.BatchNorm2d(ngf * 8),
-            nn.LeakyReLU(0.2, inplace=True),
-
-            # state size. (ngf*8) x 4 x 4
-            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1),
-            nn.BatchNorm2d(ngf * 4),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ngf*4) x 8 x 8
-            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1),
-            nn.BatchNorm2d(ngf * 2),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ngf*2) x 16 x 16
-            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1),
-            nn.BatchNorm2d(ngf),
-            nn.LeakyReLU(0.2, inplace=True),
-            # state size. (ngf) x 32 x 32
-            nn.ConvTranspose2d(ngf, nc, 4, 2, 1),
-            nn.Tanh()
-            # state size. (nc) x 64 x 64
-        )
-
-    def forward(self, x):
-        if x.is_cuda and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
-        else:
-            output = self.net(x)
-        return output
-
-
-class DiscriminatorNet(nn.Module):
-
-    def __init__(self, ngpu=1):
-        super(DiscriminatorNet, self).__init__()
-
-        self.ngpu = ngpu
-        self.net = nnrd.RelevanceNet(
-            nnrd.Layer(
-                nnrd.FirstConvolution(nc, ndf, 5, 1, 2),
-                nnrd.ReLu(),
-            ),
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf, 4, '0', 2, 1, alpha=alpha, beta=beta),
-                nnrd.BatchNorm2d(ndf),
-                nnrd.ReLu(),
-            ),
-            # state size. (ndf) x 32 x 32
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha, beta=beta),
-                nnrd.BatchNorm2d(ndf * 2),
-                nnrd.ReLu(),
-            ),
-            # state size. (ndf*2) x 16 x 16
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha, beta=beta),
-                nnrd.BatchNorm2d(ndf * 4),
-                nnrd.ReLu(),
-            ),
-            # state size. (ndf*4) x 8 x 8
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha,  beta=beta),
-                nnrd.BatchNorm2d(ndf * 8),
-                nnrd.ReLu(),
-            ),
-            # state size. (ndf*8) x 4 x 4
-            nnrd.Layer(
-                nnrd.NextConvolution(ndf * 8, 1, 4, '4', 1, 0),
-                nn.Sigmoid()
-            )
-        )
-
-    def forward(self, x):
-
-        if isinstance(x.data, torch.cuda.FloatTensor) and self.ngpu > 1:
-            output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
-        else:
-            output = self.net(x)
-
-        return output.view(-1, 1).squeeze(1)
-
-    def relprop(self):
-        return self.net.relprop()
-
-    def setngpu(self, ngpu):
-        self.ngpu = ngpu
-
-
-generator = GeneratorNet(ngpu).to(gpu)
+# generator = GeneratorNet(ngpu).to(gpu)
+ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
+generator = dcgm.GeneratorNetBi(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
 
-discriminator = DiscriminatorNet(ngpu).to(gpu)
+# discriminator = DiscriminatorNet(ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetBi(nc, ndf, alpha, beta, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     discriminator.load_state_dict(torch.load(opt.loadG))
@@ -239,7 +164,7 @@ if opt.loadD != '':
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
-loss = nn.BCELoss()
+loss = nn.CrossEntropyLoss()
 
 # init fixed noise
 
@@ -257,7 +182,7 @@ print('Created Logger')
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
-        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1/2)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
 
         ############################
         # Train Discriminator
@@ -265,12 +190,14 @@ for epoch in range(opt.epochs):
         # train with real
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
+        real_data = F.pad(real_data, (p, p, p, p), value=-1)
         label_real = discriminator_target(batch_size).to(gpu)
-
+        # save input without noise for relevance comparison
+        real_test = real_data[0].clone().unsqueeze(0)
         # Add noise to input
         real_data = added_gaussian(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
-        d_err_real = loss(prediction_real, label_real)
+        d_err_real = loss(prediction_real, label_real.long())
         d_err_real.backward()
         d_real = prediction_real.mean().item()
 
@@ -281,22 +208,31 @@ for epoch in range(opt.epochs):
 
         # Add noise to fake data
         fake = added_gaussian(fake, add_noise_var)
+        fake = F.pad(fake, (p, p, p, p), value=-1)
         prediction_fake = discriminator(fake.detach())
-        d_err_fake = loss(prediction_fake, label_fake)
+        d_err_fake = loss(prediction_fake, label_fake.long())
         d_err_fake.backward()
         d_fake_1 = prediction_fake.mean().item()
         d_error_total = d_err_real + d_err_fake
-        d_optimizer.step()
+
+        # only update uf we don't freeze discriminator
+        if not opt.freezeD or (opt.freezeD and epoch <= opt.epochs // 3):
+            d_optimizer.step()
 
         ############################
         # Train Generator
         ###########################
         generator.zero_grad()
         prediction_fake_g = discriminator(fake)
-        g_err = loss(prediction_fake_g, label_real)
-        g_err.backward()
+        g_err = loss(prediction_fake_g, label_real.long())
+        gradient_mask = torch.Tensor([1, 0])
+        g_err.backward(gradient=gradient_mask)
+        exit()
         d_fake_2 = prediction_fake_g.mean().item()
-        g_optimizer.step()
+
+        # only update if we don't freeze generator
+        if not opt.freezeG or (opt.freezeG and epoch <= opt.epochs // 3):
+            g_optimizer.step()
 
         logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
@@ -308,6 +244,7 @@ for epoch in range(opt.epochs):
         if n_batch % 100 == 0:
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
+            test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
 
             # TODO:
             # - try: test_fake = test_fake.detach()
@@ -321,21 +258,36 @@ for epoch in range(opt.epochs):
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
 
+            # Relevance propagation on real image
+            real_test.requires_grad = True
+            real_test_result = discriminator(real_test)
+            real_test_relevance = discriminator.relprop()
+
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
+
+            test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
+            test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
+            printdata = {'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
+                         'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
+                         'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
+
 
             img_name = logger.log_images(
-                test_fake.detach(), test_relevance.detach(), 1,
-                epoch, n_batch, len(dataloader)
+                test_fake.detach(), test_relevance.detach(), test_fake.size(0),
+                epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
             # show images inline
+            comment = '{:.4f}-{:.4f}'.format(printdata['test_result'], printdata['real_test_result'])
+
             subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
-                             outf + '/mnist/hori_epoch_' + str(epoch) + '_batch_' + str(n_batch) + '.png'])
+                             outf + '/mnist/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)

@@ -73,7 +73,6 @@ class FirstConvolution(nn.Conv2d):
 
         else:
 
-
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
@@ -140,7 +139,6 @@ class NextConvolution(nn.Conv2d):
         if type(R) is tuple:
             R, params = R
 
-
             gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
                                           params['mean']
             var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
@@ -182,7 +180,6 @@ class NextConvolution(nn.Conv2d):
         # If not, continue as usual
         else:
 
-
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             pself.load_state_dict(self.state_dict())
@@ -212,6 +209,146 @@ class NextConvolution(nn.Conv2d):
 
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
+
+        return R
+
+
+class NextConvolutionEps(nn.Conv2d):
+
+    def __init__(self, in_channels, out_channels, kernel_size, name, stride=1, padding=2, dilation=1, groups=1,
+                 bias=True, epsilon=1e-9):
+        super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
+
+        self.name = name
+        # Variables for Relevance Propagation
+        self.X = None
+        self.epsilon = epsilon
+
+    def forward(self, input):
+        # Input shape: minibatch x in_channels, iH x iW
+        self.X = input.clone()
+        return super().forward(input)
+
+    def relprop(self, R):
+
+        # Is the layer before Batch Norm?
+        if type(R) is tuple:
+            R, params = R
+
+            gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
+                                          params['mean']
+            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
+
+            # Clone so we don't influence actual layer
+            iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
+            iself.load_state_dict(self.state_dict())
+            iself.X = self.X.clone()
+            # iself.bias.data *= 0
+            iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
+                                * var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(iself.weight)
+
+            iX = iself.X
+
+            ZA = iself(iX) + self.epsilon
+            SA = torch.div(R, ZA)
+
+            C = torch.autograd.grad(ZA, iX, SA)[0]
+            R = iself.X * C
+
+        # If not, continue as usual
+        else:
+
+            # Clone so we don't influence actual layer
+            iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
+            iself.load_state_dict(self.state_dict())
+            iself.X = self.X.clone()
+
+            iX = iself.X
+
+            ZA = iself(iX) + self.epsilon
+            SA = torch.div(R, ZA)
+
+            C = torch.autograd.grad(ZA, iX, SA)[0]
+            R = iself.X * C
+
+        return R
+
+
+class LastConvolutionEps(nn.Conv2d):
+
+    def __init__(self, in_channels, out_channels, kernel_size, name, stride=1, padding=2, dilation=1, groups=1,
+                 bias=True, epsilon=1e-9):
+        super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
+
+        self.name = name
+        # Variables for Relevance Propagation
+        self.X = None
+        self.epsilon = epsilon
+
+    def forward(self, input):
+        # Input shape: minibatch x in_channels, iH x iW
+        self.X = input.clone()
+
+        if not self.training:
+            self.weight.data *= -1
+            self.bias.data *= -1
+
+        output = super().forward(input)
+
+        if not self.training:
+            self.weight.data *= -1
+            self.bias.data *= -1
+
+        return output
+
+    def relprop(self, R):
+
+        # Is the layer before Batch Norm?
+        if type(R) is tuple:
+            R, params = R
+
+            gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
+                                          params['mean']
+            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
+
+            # Clone so we don't influence actual layer
+            iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
+            iself.load_state_dict(self.state_dict())
+            iself.X = self.X.clone()
+            # iself.bias.data *= 0
+            iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
+                                * var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(iself.weight)
+
+            iself.weight.data *= -1
+            iself.bias.data *= -1
+
+            iX = iself.X
+
+            ZA = iself(iX) + self.epsilon
+            SA = torch.div(R, ZA)
+
+            C = torch.autograd.grad(ZA, iX, SA)[0]
+            R = iself.X * C
+
+        # If not, continue as usual
+        else:
+
+            # Clone so we don't influence actual layer
+            iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
+            iself.load_state_dict(self.state_dict())
+            iself.X = self.X.clone()
+
+            iX = iself.X
+
+            ZA = iself(iX) + self.epsilon
+            SA = torch.div(R, ZA)
+
+            C = torch.autograd.grad(ZA, iX, SA)[0]
+            R = iself.X * C
 
         return R
 
@@ -472,6 +609,32 @@ class ReshapeLayer(nn.Module):
         return input.view(-1, self.filters, self.height, self.width)
 
 
+class RelevanceNetAlternate(nn.Sequential):
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.relevanceOutput = None
+
+    def forward(self, input):
+
+        # self.relevanceOutput = None
+
+        for idx, layer in enumerate(self):
+            input = layer.forward(input)
+            # save output of second-to-last layer to use in relevance propagation
+            # if idx == len(self) - 2:
+            #     self.relevanceOutput = input
+
+        return input
+
+    def relprop(self, relevance):
+        R = relevance.clone()
+        # For all layers
+        for layer in self[::-1]:
+            R = layer.relprop(R)
+        return R
+
+
 class RelevanceNet(nn.Sequential):
 
     def __init__(self, *args):
@@ -491,10 +654,10 @@ class RelevanceNet(nn.Sequential):
 
         return input
 
-    def relprop(self):
+    def relprop(self, relevance):
         R = self.relevanceOutput.clone()
         # For all layers except the last
-        for layer in self[-2::-1]:
+        for layer in self[::-1]:
             R = layer.relprop(R)
         return R
 
