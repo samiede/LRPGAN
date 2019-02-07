@@ -32,8 +32,7 @@ parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
 parser.add_argument('--imageSize', type=int, default=64)
 parser.add_argument('--loadG', default='', help='path to generator (to continue training')
 parser.add_argument('--loadD', default='', help='path to discriminator (to continue training')
-parser.add_argument('--alpha', default=1, type=float)
-parser.add_argument('--beta', default=None, type=float)
+parser.add_argument('--alpha', default=1, type=int)
 parser.add_argument('--lflip', help='Flip the labels during training', action='store_true')
 parser.add_argument('--nolabel', help='Print the images without labeling of probabilities', action='store_true')
 parser.add_argument('--freezeG', help='Freezes training for G after epochs / 3 epochs', action='store_true')
@@ -47,7 +46,6 @@ ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
-beta = opt.beta
 p = 2
 print(opt)
 
@@ -144,7 +142,7 @@ if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
 
 # discriminator = DiscriminatorNet(ngpu).to(gpu)
-discriminator = dcgm.DiscriminatorNetLessCheckerboardAlternate(nc, ndf, alpha, beta, ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardAlternate(nc, ndf, alpha, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     discriminator.load_state_dict(torch.load(opt.loadG))

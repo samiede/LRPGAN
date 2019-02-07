@@ -116,17 +116,15 @@ class FirstConvolution(nn.Conv2d):
 class NextConvolution(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, name, stride=1, padding=2, dilation=1, groups=1,
-                 bias=True, alpha=1, beta=None):
+                 bias=True, alpha=1):
         super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
 
         self.name = name
         # Variables for Relevance Propagation
         self.X = None
         self.alpha = alpha
-        if beta is None:
-            self.beta = alpha - 1
-        else:
-            self.beta = beta
+        self.beta = alpha - 1
+
 
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
@@ -654,10 +652,10 @@ class RelevanceNet(nn.Sequential):
 
         return input
 
-    def relprop(self, relevance):
+    def relprop(self):
         R = self.relevanceOutput.clone()
         # For all layers except the last
-        for layer in self[::-1]:
+        for layer in self[-2::-1]:
             R = layer.relprop(R)
         return R
 

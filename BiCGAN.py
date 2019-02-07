@@ -165,6 +165,7 @@ d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.99
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
 loss = nn.CrossEntropyLoss()
+gloss = nn.BCELoss()
 
 # init fixed noise
 
@@ -223,11 +224,9 @@ for epoch in range(opt.epochs):
         # Train Generator
         ###########################
         generator.zero_grad()
-        prediction_fake_g = discriminator(fake)
-        g_err = loss(prediction_fake_g, label_real.long())
-        gradient_mask = torch.Tensor([1, 0])
-        g_err.backward(gradient=gradient_mask)
-        exit()
+        prediction_fake_g = discriminator(fake)[:, 0]
+        g_err = gloss(prediction_fake_g, label_real)
+        g_err.backward()
         d_fake_2 = prediction_fake_g.mean().item()
 
         # only update if we don't freeze generator

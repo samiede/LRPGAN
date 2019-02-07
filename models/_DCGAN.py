@@ -65,7 +65,7 @@ class DiscriminatorNetBi(nn.Module):
             ),
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf, out_channels=ndf, kernel_size=4, name='0', stride=2, padding=1,
-                                     alpha=alpha, beta=beta),
+                                     alpha=alpha),
                 nnrd.BatchNorm2d(ndf),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -73,7 +73,7 @@ class DiscriminatorNetBi(nn.Module):
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf, out_channels=ndf * 2, kernel_size=4, name='1', stride=2,
-                                     padding=1, alpha=alpha, beta=beta),
+                                     padding=1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -82,7 +82,7 @@ class DiscriminatorNetBi(nn.Module):
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf * 2, out_channels=ndf * 4, kernel_size=4, name='2', stride=2,
-                                     padding=1, alpha=alpha, beta=beta),
+                                     padding=1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -181,7 +181,7 @@ class DiscriminatorNetLessCheckerboardNoPad(nn.Module):
             ),
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf, out_channels=ndf, kernel_size=4, name='0', stride=2, padding=0,
-                                     alpha=alpha, beta=beta),
+                                     alpha=alpha),
                 nnrd.BatchNorm2d(ndf),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -189,7 +189,7 @@ class DiscriminatorNetLessCheckerboardNoPad(nn.Module):
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf, out_channels=ndf * 2, kernel_size=4, name='1', stride=2,
-                                     padding=0, alpha=alpha, beta=beta),
+                                     padding=0, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -198,7 +198,7 @@ class DiscriminatorNetLessCheckerboardNoPad(nn.Module):
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf * 2, out_channels=ndf * 4, kernel_size=4, name='2', stride=2,
-                                     padding=0, alpha=alpha, beta=beta),
+                                     padding=0, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -206,7 +206,7 @@ class DiscriminatorNetLessCheckerboardNoPad(nn.Module):
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2,
-                                     padding=0, alpha=alpha, beta=beta),
+                                     padding=0, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -298,26 +298,26 @@ class DiscriminatorNetLessCheckerboardTips(nn.Module):
                 nnrd.ReLu(),
             ),
             nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf, 4, '0', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf, ndf, 4, '0', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf),
                 nnrd.ReLu(),
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
 
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
             ),
@@ -457,25 +457,25 @@ class DiscriminatorNetVBN(nn.Module):
                 nnrd.ReLu(),
             ),
             nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf, 4, '0', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf, ndf, 4, '0', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf),
                 nnrd.ReLu(),
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
             ),
@@ -562,7 +562,7 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
             ),
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf, out_channels=ndf, kernel_size=4, name='0', stride=2, padding=1,
-                                     alpha=alpha, beta=beta),
+                                     alpha=alpha),
                 nnrd.BatchNorm2d(ndf),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -570,7 +570,7 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf, out_channels=ndf * 2, kernel_size=4, name='1', stride=2,
-                                     padding=1, alpha=alpha, beta=beta),
+                                     padding=1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -579,7 +579,7 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf * 2, out_channels=ndf * 4, kernel_size=4, name='2', stride=2,
-                                     padding=1, alpha=alpha, beta=beta),
+                                     padding=1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -632,7 +632,7 @@ class DiscriminatorNetLessCheckerboardAlternate(nn.Module):
             ),
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf, out_channels=ndf, kernel_size=4, name='0', stride=2, padding=1,
-                                     alpha=alpha, beta=beta),
+                                     alpha=alpha),
                 nnrd.BatchNorm2d(ndf),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -640,7 +640,7 @@ class DiscriminatorNetLessCheckerboardAlternate(nn.Module):
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf, out_channels=ndf * 2, kernel_size=4, name='1', stride=2,
-                                     padding=1, alpha=alpha, beta=beta),
+                                     padding=1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -649,7 +649,7 @@ class DiscriminatorNetLessCheckerboardAlternate(nn.Module):
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
                 nnrd.NextConvolution(in_channels=ndf * 2, out_channels=ndf * 4, kernel_size=4, name='2', stride=2,
-                                     padding=1, alpha=alpha, beta=beta),
+                                     padding=1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
@@ -734,7 +734,7 @@ class GeneratorNet(nn.Module):
 
 class DiscriminatorNet(nn.Module):
 
-    def __init__(self, nc, ndf, alpha, beta, ngpu=1):
+    def __init__(self, nc, ndf, alpha, ngpu=1):
         super(DiscriminatorNet, self).__init__()
 
         self.ngpu = ngpu
@@ -745,19 +745,19 @@ class DiscriminatorNet(nn.Module):
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
-                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf, ndf * 2, 4, '1', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*2) x 16 x 16
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf * 2, ndf * 4, 4, '2', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 4),
                 nnrd.ReLu(),
             ),
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
-                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha, beta=beta),
+                nnrd.NextConvolution(ndf * 4, ndf * 8, 4, '3', 2, 1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
             ),
