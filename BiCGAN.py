@@ -157,7 +157,7 @@ if opt.loadD != '':
 
 # init optimizer + loss
 
-d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+d_optimizer = optim.Adam(discriminator.parameters(), lr=0.001, betas=(0.5, 0.999))
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
 dloss = nn.CrossEntropyLoss()
@@ -221,7 +221,6 @@ for epoch in range(opt.epochs):
         ###########################
         generator.zero_grad()
         prediction_fake_g = discriminator(fake)[:, 0]
-        print(prediction_fake_g)
         # we use BCE Loss here because we only want to train on one output
         g_err = gloss(prediction_fake_g, label_fake)
         g_err.backward()
