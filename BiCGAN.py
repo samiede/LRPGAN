@@ -157,7 +157,7 @@ if opt.loadD != '':
 
 # init optimizer + loss
 
-d_optimizer = optim.Adam(discriminator.parameters(), lr=0.001, betas=(0.5, 0.999))
+d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
 dloss = nn.CrossEntropyLoss()
