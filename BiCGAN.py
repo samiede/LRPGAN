@@ -160,7 +160,7 @@ if opt.loadD != '':
 d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
 
-loss = nn.CrossEntropyLoss()
+dloss = nn.CrossEntropyLoss()
 gloss = nn.BCELoss()
 
 # init fixed noise
@@ -194,9 +194,9 @@ for epoch in range(opt.epochs):
         # Add noise to input
         real_data = added_gaussian(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
-        d_err_real = loss(prediction_real, label_real.long())
+        d_err_real = dloss(prediction_real, label_real.long())
         d_err_real.backward()
-        d_real = prediction_real.mean().item()
+        d_real = prediction_real[:, 0].mean().item()
 
         # train with fake
         noise = torch.randn(batch_size, nz, 1, 1, device=gpu)
@@ -207,9 +207,9 @@ for epoch in range(opt.epochs):
         fake = added_gaussian(fake, add_noise_var)
         fake = F.pad(fake, (p, p, p, p), value=-1)
         prediction_fake = discriminator(fake.detach())
-        d_err_fake = loss(prediction_fake, label_fake.long())
+        d_err_fake = dloss(prediction_fake, label_fake.long())
         d_err_fake.backward()
-        d_fake_1 = prediction_fake.mean().item()
+        d_fake_1 = prediction_fake[:, 0].mean().item()
         d_error_total = d_err_real + d_err_fake
 
         # only update uf we don't freeze discriminator
@@ -223,7 +223,7 @@ for epoch in range(opt.epochs):
         prediction_fake_g = discriminator(fake)[:, 0]
         g_err = gloss(prediction_fake_g, label_real)
         g_err.backward()
-        d_fake_2 = prediction_fake_g.mean().item()
+        d_fake_2 = prediction_fake_g[:, 0].mean().item()
 
         # only update if we don't freeze generator
         if not opt.freezeG or (opt.freezeG and epoch <= opt.epochs // 3):
