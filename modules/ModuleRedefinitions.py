@@ -277,7 +277,7 @@ class NextConvolutionEps(nn.Conv2d):
 class LastConvolutionEps(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, name, stride=1, padding=2, dilation=1, groups=1,
-                 bias=True, epsilon=1e-9):
+                 bias=True, epsilon=1e-2):
         super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
 
         self.name = name
