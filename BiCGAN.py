@@ -110,7 +110,7 @@ def discriminator_target(size):
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
         target = torch.Tensor(size)
-        target.fill_(1)
+        target.fill_(0)
         return target
     return torch.Tensor(size).zero_()
 
@@ -124,7 +124,7 @@ def generator_target(size):
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
         target = torch.Tensor(size)
-        target.fill_(0)
+        target.fill_(1)
         # target[1].uniform_(0.7, 1.0)
         # return torch.Tensor(size).zero_()
         return target
@@ -221,7 +221,8 @@ for epoch in range(opt.epochs):
         ###########################
         generator.zero_grad()
         prediction_fake_g = discriminator(fake)[:, 0]
-        g_err = gloss(prediction_fake_g, label_real)
+        # we use BCE Loss here because we only want to train on one output
+        g_err = gloss(prediction_fake_g, label_fake)
         g_err.backward()
         d_fake_2 = prediction_fake_g.mean().item()
 
