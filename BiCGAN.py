@@ -193,7 +193,7 @@ for epoch in range(opt.epochs):
         real_test = real_data[0].clone().unsqueeze(0)
         # Add noise to input
         real_data = added_gaussian(real_data, add_noise_var)
-        prediction_real = discriminator(real_data, nn.Softmax(dim=1))
+        prediction_real = discriminator(real_data)
         d_err_real = dloss(prediction_real, label_real.long())
         d_err_real.backward()
         d_real = prediction_real[:, 0].mean().item()
@@ -206,7 +206,7 @@ for epoch in range(opt.epochs):
         # Add noise to fake data
         fake = added_gaussian(fake, add_noise_var)
         fake = F.pad(fake, (p, p, p, p), value=-1)
-        prediction_fake = discriminator(fake.detach(), nn.Softmax(dim=1))
+        prediction_fake = discriminator(fake.detach())
         d_err_fake = dloss(prediction_fake, label_fake.long())
         d_err_fake.backward()
         d_fake_1 = prediction_fake[:, 0].mean().item()

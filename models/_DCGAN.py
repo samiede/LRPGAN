@@ -108,7 +108,7 @@ class DiscriminatorNetBi(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.lastReLU = nnrd.ReLu()
 
-    def forward(self, x, lastlayer):
+    def forward(self, x, lastlayer=nn.Softmax(dim=1)):
 
         if isinstance(x.data, torch.cuda.FloatTensor) and self.ngpu > 1:
             output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
