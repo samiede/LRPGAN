@@ -221,6 +221,7 @@ for epoch in range(opt.epochs):
         ###########################
         generator.zero_grad()
         prediction_fake_g = discriminator(fake)[:, 0]
+        print(prediction_fake_g)
         # we use BCE Loss here because we only want to train on one output
         g_err = gloss(prediction_fake_g, label_fake)
         g_err.backward()
