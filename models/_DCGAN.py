@@ -104,7 +104,7 @@ class DiscriminatorNetBi(nn.Module):
 
         )
 
-        self.softmax = nn.Softmax(dim=0)
+        self.softmax = nn.Softmax(dim=1)
         self.sigmoid = nn.Sigmoid()
         self.lastReLU = nnrd.ReLu()
 
@@ -117,7 +117,7 @@ class DiscriminatorNetBi(nn.Module):
 
         if self.training:
             output = output.squeeze()
-            output = self.sigmoid(output)
+            output = self.softmax(output)
         else:
             output = self.lastReLU(output)
             self.relevance = output
