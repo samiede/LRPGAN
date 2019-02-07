@@ -61,7 +61,6 @@ try:
 except OSError:
     pass
 
-
 # CUDA everything
 cudnn.benchmark = True
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -111,9 +110,7 @@ def discriminator_target(size):
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
         target = torch.Tensor(size)
-        # target[0].uniform_(0.7, 1.0)
         target.fill_(1)
-        # target[:, 1].fill_(0)
         return target
     return torch.Tensor(size).zero_()
 
@@ -127,7 +124,6 @@ def generator_target(size):
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
         target = torch.Tensor(size)
-        # target[:, 0].fill_(0)
         target.fill_(0)
         # target[1].uniform_(0.7, 1.0)
         # return torch.Tensor(size).zero_()
@@ -245,6 +241,8 @@ for epoch in range(opt.epochs):
             test_fake = generator(fixed_noise)
             test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
 
+            mask = torch.Tensor([0, 1])
+
             # TODO:
             # - try: test_fake = test_fake.detach()
             #        test_fake.requires_grad = True
@@ -252,19 +250,21 @@ for epoch in range(opt.epochs):
             # set ngpu to one, so relevance propagation works
             if (opt.ngpu > 1):
                 discriminator.setngpu(1)
+            discriminator.eval()
 
             # eval needs to be set so batch norm works with batch size of 1
-            test_result = discriminator(test_fake)
-            test_relevance = discriminator.relprop()
+            test_result = discriminator(test_fake)[1]
+            test_relevance = discriminator.relprop(mask)
 
             # Relevance propagation on real image
             real_test.requires_grad = True
-            real_test_result = discriminator(real_test)
-            real_test_relevance = discriminator.relprop()
+            real_test_result = discriminator(real_test)[1]
+            real_test_relevance = discriminator.relprop(mask)
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)
+            discriminator.train()
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
@@ -275,7 +275,6 @@ for epoch in range(opt.epochs):
             printdata = {'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
-
 
             img_name = logger.log_images(
                 test_fake.detach(), test_relevance.detach(), test_fake.size(0),

@@ -57,8 +57,9 @@ class DiscriminatorNetBi(nn.Module):
     def __init__(self, nc, ndf, alpha, beta, ngpu=1):
         super(DiscriminatorNetBi, self).__init__()
 
+        self.relevance = None
         self.ngpu = ngpu
-        self.net = nnrd.RelevanceNet(
+        self.net = nnrd.RelevanceNetAlternate(
             nnrd.Layer(
                 nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=5, stride=1, padding=0),
                 nnrd.ReLu(),
@@ -104,6 +105,7 @@ class DiscriminatorNetBi(nn.Module):
         )
 
         self.softmax = nn.Softmax(dim=0)
+        self.lastReLU = nnrd.ReLu()
 
     def forward(self, x):
 
@@ -111,12 +113,21 @@ class DiscriminatorNetBi(nn.Module):
             output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
         else:
             output = self.net(x)
-        output = output.squeeze()
 
-        return self.softmax(output)
+        if self.training:
+            output = output.squeeze()
+            output = self.softmax(output)
+        else:
+            output = self.lastReLU(output)
+            self.relevance = output
+            output = output.squeeze()
 
-    def relprop(self):
-        return self.net.relprop()
+        return output
+
+    def relprop(self, mask):
+
+        self.relevance = self.relevance * mask.resize_as_(self.relevance)
+        return self.net.relprop(self.relevance)
 
     def setngpu(self, ngpu):
         self.ngpu = ngpu
@@ -504,7 +515,6 @@ class DiscriminatorNetVBN(nn.Module):
 
 # ######################################## Less Checkerboard pattern ########################################
 
-
 class GeneratorNetLessCheckerboard(nn.Module):
     def __init__(self, nc, ngf, ngpu):
         super(GeneratorNetLessCheckerboard, self).__init__()
@@ -586,8 +596,8 @@ class DiscriminatorNetLessCheckerboard(nn.Module):
             ),  # state size. (ndf*2) x 16 x 16
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(
-                nnrd.NextConvolutionEps(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2,
-                                        padding=1),
+                nnrd.NextConvolution(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2,
+                                     padding=1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 8),
                 nnrd.ReLu(),
                 nnrd.Dropout(0.3),
