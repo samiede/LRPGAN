@@ -117,7 +117,7 @@ class DiscriminatorNetBi(nn.Module):
 
         if self.training:
             output = output.squeeze()
-            output = self.softmax(output)
+            output = self.sigmoid(output)
         else:
             output = self.lastReLU(output)
             self.relevance = output
