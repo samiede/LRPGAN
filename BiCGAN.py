@@ -223,7 +223,7 @@ for epoch in range(opt.epochs):
         prediction_fake_g = discriminator(fake)[:, 0]
         g_err = gloss(prediction_fake_g, label_real)
         g_err.backward()
-        d_fake_2 = prediction_fake_g[:, 0].mean().item()
+        d_fake_2 = prediction_fake_g.mean().item()
 
         # only update if we don't freeze generator
         if not opt.freezeG or (opt.freezeG and epoch <= opt.epochs // 3):
