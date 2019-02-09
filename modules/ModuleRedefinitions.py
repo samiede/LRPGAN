@@ -338,7 +338,7 @@ class LastConvolutionEps(nn.Conv2d):
             c = a.grad
             R = (a * c).data
 
-            print(np.allclose(R.detach().numpy(), r.detach().numpy()))
+            print(np.allclose(R.detach().cpu().numpy(), r.detach().cpu().numpy()))
 
             # C = torch.autograd.grad(ZA, iX, SA)[0]
             # R = iself.X * C
