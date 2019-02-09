@@ -37,7 +37,7 @@ parser.add_argument('--lflip', help='Flip the labels during training', action='s
 parser.add_argument('--nolabel', help='Print the images without labeling of probabilities', action='store_true')
 parser.add_argument('--freezeG', help='Freezes training for G after epochs / 3 epochs', action='store_true')
 parser.add_argument('--freezeD', help='Freezes training for D after epochs / 3 epochs', action='store_true')
-parser.add_argument('--fepochs', help='Number of epochs before freeze', type=int, default=None)
+# parser.add_argument('--fepochs', help='Number of epochs before freeze', type=int, default=None)
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -48,14 +48,15 @@ ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
 p = 2
-fepochs = int(opt.fepochs)
+# fepochs = int(opt.fepochs)
 print(opt)
 
-if fepochs:
-    freezeEpochs = fepochs
-else:
-    freezeEpochs = opt.epochs // 3
+# if fepochs:
+#     freezeEpochs = fepochs
 
+# else:
+#     freezeEpochs = opt.epochs // 3
+freezeEpochs = opt.epochs // 3
 try:
     os.makedirs(outf)
 except OSError:

@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from utils import utils
 import copy
+import numpy as np
 
 
 class FirstConvolution(nn.Conv2d):
@@ -124,7 +125,6 @@ class NextConvolution(nn.Conv2d):
         self.X = None
         self.alpha = alpha
         self.beta = alpha - 1
-
 
     def forward(self, input):
         # Input shape: minibatch x in_channels, iH x iW
@@ -266,7 +266,7 @@ class NextConvolutionEps(nn.Conv2d):
             iX = iself.X
 
             ZA = iself(iX) + self.epsilon
-            SA = torch.div(R, ZA)
+            SA = torch.div(R, ZA).detach()
 
             C = torch.autograd.grad(ZA, iX, SA)[0]
             R = iself.X * C
@@ -323,13 +323,25 @@ class LastConvolutionEps(nn.Conv2d):
             iself.weight.data *= -1
             iself.bias.data *= -1
 
-            iX = iself.X
+            iX = torch.tensor(iself.X.data, requires_grad=True)
+            Z = iself(iX) + self.epsilon
+            S = torch.div(R, Z)
+            C = torch.autograd.grad(Z, iX, S)[0]
+            r = iself.X * C
 
-            ZA = iself(iX) + self.epsilon
-            SA = torch.div(R, ZA)
+            a = torch.tensor(iself.X.data, requires_grad=True)
+            ZA = iself(a)
+            # ZA = iself(a) + self.epsilon
+            SA = torch.div(R, ZA + self.epsilon).data
 
-            C = torch.autograd.grad(ZA, iX, SA)[0]
-            R = iself.X * C
+            (ZA * SA).sum().backward()
+            c = a.grad
+            R = (a * c).data
+
+            print(np.allclose(R.detach().numpy(), r.detach().numpy()))
+
+            # C = torch.autograd.grad(ZA, iX, SA)[0]
+            # R = iself.X * C
 
         # If not, continue as usual
         else:
@@ -339,6 +351,9 @@ class LastConvolutionEps(nn.Conv2d):
                                self.padding)
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
+
+            iself.weight.data *= -1
+            iself.bias.data *= -1
 
             iX = iself.X
 
