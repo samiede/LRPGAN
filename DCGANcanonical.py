@@ -222,7 +222,7 @@ for epoch in range(opt.epochs):
         d_err_fake = loss(prediction_fake, label_fake)
         d_err_fake.backward()
         d_fake_1 = prediction_fake.mean().item()
-        d_error_total = d_err_real + d_err_fake
+        d_error_total = d_err_real.item() + d_err_fake.item()
 
         # only update uf we don't freeze discriminator
         if not opt.freezeD or (opt.freezeD and epoch <= freezeEpochs):
