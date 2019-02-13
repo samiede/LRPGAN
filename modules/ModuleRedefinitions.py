@@ -8,7 +8,7 @@ import numpy as np
 class FirstConvolution(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=2, dilation=1, groups=1,
-                 bias=True):
+                 bias=False):
         super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
 
         # Variables for Relevance Propagation
@@ -27,32 +27,27 @@ class FirstConvolution(nn.Conv2d):
 
             gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
                                           params['mean']
-            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
+            var = torch.sqrt(var + eps)
 
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
 
-            iself.bias.data *= 0
-            iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
-                                * var.view(-1, 1, 1, 1).expand_as(iself.weight)
+            iself.weight.data = iself.weight * (gamma / var).reshape(iself.out_channels, 1, 1, 1)
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
 
-            nself.bias.data *= 0
-            nself.weight.data = nself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(nself.weight) \
-                                * var.view(-1, 1, 1, 1).expand_as(nself.weight)
+            nself.weight.data = nself.weight * (gamma / var).reshape(nself.out_channels, 1, 1, 1)
             nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
 
-            pself.bias.data *= 0
-            pself.weight.data = pself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(pself.weight) \
-                                * var.view(-1, 1, 1, 1).expand_as(pself.weight)
+            pself.weight.data = pself.weight * (gamma / var).reshape(pself.out_channels, 1, 1, 1)
+
             pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
             X = iself.X
@@ -78,20 +73,16 @@ class FirstConvolution(nn.Conv2d):
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
 
-            iself.bias.data *= 0
-
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
 
-            nself.bias.data *= 0
             nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
 
-            pself.bias.data *= 0
             pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
             X = iself.X
@@ -139,7 +130,7 @@ class NextConvolution(nn.Conv2d):
 
             gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
                                           params['mean']
-            var = torch.div(torch.ones(1), (torch.sqrt(var + eps)))
+            var_sqrt = torch.sqrt(var + eps)
 
             # Positive weights
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
@@ -148,8 +139,9 @@ class NextConvolution(nn.Conv2d):
             pself.X = self.X.clone()
             pself.alpha = self.alpha
             pself.bias.data *= 0
-            pself.weight.data = pself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(pself.weight) \
-                                * var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(pself.weight)
+            pself.weight.data = pself.weight * (gamma / var).reshape(pself.out_channels, 1, 1, 1)
+            # pself.weight.data = pself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(pself.weight) \
+            #                     / var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(pself.weight)
             pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
 
             # Negative weights
@@ -159,8 +151,9 @@ class NextConvolution(nn.Conv2d):
             nself.X = self.X.clone()
             nself.beta = self.beta
             nself.bias.data *= 0
-            nself.weight.data = nself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(nself.weight) \
-                                * var.view(-1, 1, 1, 1).expand_as(nself.weight)
+            nself.weight.data = nself.weight * (gamma / var).reshape(nself.out_channels, 1, 1, 1)
+            # nself.weight.data = nself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(nself.weight) \
+            #                     * var.view(-1, 1, 1, 1).expand_as(nself.weight)
             nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
             pX = pself.X + 1e-9
@@ -184,7 +177,7 @@ class NextConvolution(nn.Conv2d):
             pself.X = self.X.clone()
             pself.alpha = self.alpha
 
-            pself.bias.data *= 0
+            pself.bias.data = torch.max(torch.Tensor(1).zero_(), pself.bias)
             pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
@@ -192,7 +185,8 @@ class NextConvolution(nn.Conv2d):
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
             nself.beta = self.beta
-            nself.bias.data *= 0
+
+            nself.bias.data = torch.min(torch.Tensor(1).zero_(), nself.bias)
             nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
             pX = pself.X + 1e-9
@@ -208,7 +202,23 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
+        print('Saving heatmap for layer ', self.name, R.size())
+        utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
         return R
+
+    def incorporateBatchNorm(self, bn):
+
+        gamma = bn.weight
+        beta = bn.bias
+        mean = bn.running_mean
+        var = bn.running_var
+        eps = bn.eps
+
+        var_sqrt = torch.sqrt(var + eps)
+
+        self.weight.data = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var.reshape(self.out_channels, 1,
+                                                                                                   1, 1)
+        self.bias.data = ((self.bias - mean) * gamma) / var + beta
 
 
 class NextConvolutionEps(nn.Conv2d):
@@ -242,7 +252,6 @@ class NextConvolutionEps(nn.Conv2d):
                                self.padding)
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
-            # iself.bias.data *= 0
             iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
                                 * var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(iself.weight)
 
@@ -263,15 +272,42 @@ class NextConvolutionEps(nn.Conv2d):
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
 
-            iX = iself.X
-
-            ZA = iself(iX) + self.epsilon
-            SA = torch.div(R, ZA).detach()
-
-            C = torch.autograd.grad(ZA, iX, SA)[0]
+            iX = torch.tensor(iself.X.data, requires_grad=True)
+            Z = iself(iX) + self.epsilon
+            S = torch.div(R, Z)
+            C = torch.autograd.grad(Z, iX, S)[0]
             R = iself.X * C
 
+            # a = torch.tensor(iself.X.data, requires_grad=True)
+            # ZA = iself(a)
+            # # ZA = iself(a) + self.epsilon
+            # SA = torch.div(R, ZA + self.epsilon).data
+            #
+            # (ZA * SA).sum().backward()
+            # c = a.grad
+            # R = (a * c).data
+            #
+            # print('Next convolution', np.allclose(R.detach().cpu().numpy(), r.detach().cpu().numpy()))
+            # C = torch.autograd.grad(ZA, iX, SA)[0]
+            # R = iself.X * C
+
+        print('Saving heatmap for layer ', self.name, R.size())
+        utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
         return R
+
+    def incorporateBatchNorm(self, bn):
+
+        gamma = bn.weight
+        beta = bn.bias
+        mean = bn.running_mean
+        var = bn.running_var
+        eps = bn.eps
+
+        var_sqrt = torch.sqrt(var + eps)
+
+        self.weight.data = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var.reshape(self.out_channels, 1,
+                                                                                                   1, 1)
+        self.bias.data = ((self.bias - mean) * gamma) / var + beta
 
 
 class LastConvolutionEps(nn.Conv2d):
@@ -327,19 +363,18 @@ class LastConvolutionEps(nn.Conv2d):
             Z = iself(iX) + self.epsilon
             S = torch.div(R, Z)
             C = torch.autograd.grad(Z, iX, S)[0]
-            r = iself.X * C
+            R = iself.X * C
 
-            a = torch.tensor(iself.X.data, requires_grad=True)
-            ZA = iself(a)
-            # ZA = iself(a) + self.epsilon
-            SA = torch.div(R, ZA + self.epsilon).data
-
-            (ZA * SA).sum().backward()
-            c = a.grad
-            R = (a * c).data
-
-            print(np.allclose(R.detach().cpu().numpy(), r.detach().cpu().numpy()))
-
+            # a = torch.tensor(iself.X.data, requires_grad=True)
+            # ZA = iself(a)
+            # # ZA = iself(a) + self.epsilon
+            # SA = torch.div(R, ZA + self.epsilon).data
+            #
+            # (ZA * SA).sum().backward()
+            # c = a.grad
+            # R = (a * c).data
+            #
+            # print('Last convolution', np.allclose(R.detach().cpu().numpy(), r.detach().cpu().numpy()))
             # C = torch.autograd.grad(ZA, iX, SA)[0]
             # R = iself.X * C
 
@@ -355,14 +390,25 @@ class LastConvolutionEps(nn.Conv2d):
             iself.weight.data *= -1
             iself.bias.data *= -1
 
-            iX = iself.X
-
-            ZA = iself(iX) + self.epsilon
-            SA = torch.div(R, ZA)
-
-            C = torch.autograd.grad(ZA, iX, SA)[0]
+            iX = torch.tensor(iself.X.data, requires_grad=True)
+            Z = iself(iX) + self.epsilon
+            S = torch.div(R, Z)
+            C = torch.autograd.grad(Z, iX, S)[0]
             R = iself.X * C
 
+            # a = torch.tensor(iself.X.data, requires_grad=True)
+            # ZA = iself(a)
+            # # ZA = iself(a) + self.epsilon
+            # SA = torch.div(R, ZA + self.epsilon).data
+            #
+            # (ZA * SA).sum().backward()
+            # c = a.grad
+            # R = (a * c).data
+
+            # print('Last convolution', np.allclose(R.detach().cpu().numpy(), r.detach().cpu().numpy()))
+
+        print('Saving heatmap for layer ', self.name, R.size())
+        utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
         return R
 
 
