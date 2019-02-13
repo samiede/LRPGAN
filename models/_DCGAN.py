@@ -762,19 +762,22 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
             ])
             ),
             # state size. (ndf*8) x 4 x 4
-            nnrd.Layer(OrderedDict([
-                (
-                    'conv6',
-                    nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4', stride=1,
-                                            padding=0)),
-            ])
-            )
+            # nnrd.Layer(OrderedDict([
+            #     (
+            #         'conv6',
+            #         nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4', stride=1,
+            #                                 padding=0)),
+            # ])
+            # )
         )
+
+        self.lastConvolution = nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4', stride=1,
+                                            padding=0)
 
         self.sigmoid = nn.Sigmoid()
         self.lastReLU = nnrd.ReLu()
 
-    def forward(self, x):
+    def forward(self, x, flip=True):
 
         if isinstance(x.data, torch.cuda.FloatTensor) and self.ngpu > 1:
             output = nn.parallel.data_parallel(self.net, x, range(self.ngpu))
@@ -782,16 +785,23 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
             output = self.net(x)
 
         if self.training:
+            output = self.lastConvolution(output)
             output = self.sigmoid(output)
             return output.view(-1, 1).squeeze(1)
+
+        # relevance propagation
         else:
-            probability = self.sigmoid(output)
+            probability = self.lastConvolution(output, flip=False)
+            probability = self.sigmoid(probability)
+
+            output = self.lastConvolution(output, flip=flip)
             output = self.lastReLU(output)
             self.relevance = output
             return output.view(-1, 1).squeeze(1), probability.view(-1, 1).squeeze(1)
 
-    def relprop(self):
-        return self.net.relprop(self.relevance)
+    def relprop(self, flip=True):
+        relevance = self.lastConvolution.relprop(self.relevance, flip=flip)
+        return self.net.relprop(relevance)
 
     def setngpu(self, ngpu):
         self.ngpu = ngpu

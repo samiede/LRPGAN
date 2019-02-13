@@ -8,7 +8,7 @@ import numpy as np
 class FirstConvolution(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=2, dilation=1, groups=1,
-                 bias=True):
+                 bias=False):
         super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
 
         # Variables for Relevance Propagation
@@ -72,18 +72,18 @@ class FirstConvolution(nn.Conv2d):
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
-            iself.bias.data *= 0
+            # iself.bias.data *= 0
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
-            nself.bias.data *= 0
+            # nself.bias.data *= 0
             nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
-            pself.bias.data *= 0
+            # pself.bias.data *= 0
             pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
 
             X = iself.X
@@ -320,23 +320,23 @@ class LastConvolutionEps(nn.Conv2d):
         self.X = None
         self.epsilon = epsilon
 
-    def forward(self, input):
+    def forward(self, input, flip=False):
         # Input shape: minibatch x in_channels, iH x iW
         self.X = input.clone()
 
-        if not self.training:
+        if flip:
             self.weight.data *= -1
             self.bias.data *= -1
 
         output = super().forward(input)
 
-        if not self.training:
+        if flip:
             self.weight.data *= -1
             self.bias.data *= -1
 
         return output
 
-    def relprop(self, R):
+    def relprop(self, R, flip=False):
 
         # Is the layer before Batch Norm?
         if type(R) is tuple:
@@ -355,8 +355,9 @@ class LastConvolutionEps(nn.Conv2d):
             iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
                                 * var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(iself.weight)
 
-            iself.weight.data *= -1
-            iself.bias.data *= -1
+            if flip:
+                iself.weight.data *= -1
+                iself.bias.data *= -1
 
             iX = torch.tensor(iself.X.data, requires_grad=True)
             Z = iself(iX) + self.epsilon
@@ -386,8 +387,9 @@ class LastConvolutionEps(nn.Conv2d):
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
 
-            iself.weight.data *= -1
-            iself.bias.data *= -1
+            if flip:
+                iself.weight.data *= -1
+                iself.bias.data *= -1
 
             iX = torch.tensor(iself.X.data, requires_grad=True)
             Z = iself(iX) + self.epsilon
