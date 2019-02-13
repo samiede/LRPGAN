@@ -792,7 +792,9 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
         # relevance propagation
         else:
             probability = self.lastConvolution(output, flip=False)
+            print(probability.item())
             probability = self.sigmoid(probability)
+            print(probability.item())
 
             output = self.lastConvolution(output, flip=flip)
             output = self.lastReLU(output)
