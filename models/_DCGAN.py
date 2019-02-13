@@ -754,8 +754,8 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(OrderedDict([
                 ('conv5',
-                 nnrd.NextConvolution(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2,
-                                         padding=1, alpha=alpha)),
+                 nnrd.NextConvolutionEps(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2,
+                                         padding=1)),
                 ('bn5', nnrd.BatchNorm2d(ndf * 8)),
                 ('relu5', nnrd.ReLu()),
                 ('dropout5', nnrd.Dropout(0.3)),
@@ -783,11 +783,12 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
 
         if self.training:
             output = self.sigmoid(output)
+            return output.view(-1, 1).squeeze(1)
         else:
+            probability = self.sigmoid(output)
             output = self.lastReLU(output)
             self.relevance = output
-
-        return output.view(-1, 1).squeeze(1)
+            return output.view(-1, 1).squeeze(1), probability.view(-1, 1).squeeze(1)
 
     def relprop(self):
         return self.net.relprop(self.relevance)

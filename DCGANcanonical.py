@@ -81,11 +81,11 @@ except OSError:
 # CUDA everything
 cudnn.benchmark = True
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-torch.set_default_dtype(torch.float64)
+torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
-    torch.set_default_tensor_type('torch.cuda.DoubleTensor')
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
 else:
-    torch.set_default_tensor_type('torch.DoubleTensor')
+    torch.set_default_tensor_type('torch.FloatTensor')
 print(gpu)
 
 # load datasets
@@ -189,7 +189,7 @@ print('Created Logger')
 
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
-        batch_data = batch_data.double()
+        batch_data = batch_data
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
 
@@ -266,20 +266,20 @@ for epoch in range(opt.epochs):
 
             # set ngpu to one, so relevance propagation works
             if (opt.ngpu > 1):
-                discriminator.setngpu(1)
+                canonical.setngpu(1)
 
-            test_result = canonical(test_fake)
+            test_result, test_prob = canonical(test_fake)
             test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
             real_test.requires_grad = True
-            real_test_result = canonical(real_test)
+            real_test_result, real_test_prob = canonical(real_test)
             real_test_relevance = canonical.relprop()
 
             discriminator.train()
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
-                discriminator.setngpu(opt.ngpu)
+                canonical.setngpu(opt.ngpu)
             discriminator.train()
 
             # Add up relevance of all color channels
@@ -288,7 +288,7 @@ for epoch in range(opt.epochs):
 
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
             test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
-            printdata = {'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
+            printdata = {'test_result': test_prob.item(), 'real_test_result': real_test_prob.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
 
@@ -306,7 +306,7 @@ for epoch in range(opt.epochs):
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)
 
-        Logger.epoch += 1
+    Logger.epoch += 1
 
     # do checkpointing
     torch.save(discriminator.state_dict(), '%s/generator.pth' % (checkpointdir))
