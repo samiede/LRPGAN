@@ -41,11 +41,11 @@ class Logger:
 
     def log(self, d_error, g_error, epoch, n_batch, num_batches):
 
-        var_class = torch.Tensor
-        if type(d_error.data) == var_class:
-            d_error = d_error.data.cpu().numpy()
-        if type(g_error.data) == var_class:
-            g_error = g_error.data.cpu().numpy()
+        # var_class = torch.Tensor
+        # if type(d_error.data) == var_class:
+        #     d_error = d_error.data.cpu().numpy()
+        # if type(g_error.data) == var_class:
+        #     g_error = g_error.data.cpu().numpy()
 
         step = Logger._step(epoch, n_batch, num_batches)
         self.writer.add_scalar(
@@ -183,15 +183,15 @@ class Logger:
     @staticmethod
     def display_status(epoch, num_epochs, n_batch, num_batches, d_error, g_error, d_pred_real, d_pred_fake):
 
-        var_class = torch.Tensor
-        if type(d_error.data) == var_class:
-            d_error = d_error.detach().cpu().item()
-        if type(g_error.data) == var_class:
-            g_error = g_error.detach().cpu().item()
-        if type(d_pred_real.data) == var_class:
-            d_pred_real = d_pred_real.data
-        if type(d_pred_fake.data) == var_class:
-            d_pred_fake = d_pred_fake.data
+        # var_class = torch.Tensor
+        # if type(d_error.data) == var_class:
+        #     d_error = d_error.detach().cpu().item()
+        # if type(g_error.data) == var_class:
+        #     g_error = g_error.detach().cpu().item()
+        # if type(d_pred_real.data) == var_class:
+        #     d_pred_real = d_pred_real.data
+        # if type(d_pred_fake.data) == var_class:
+        #     d_pred_fake = d_pred_fake.data
 
         print('Epoch: [{}/{}], Batch Num: [{}/{}]'.format(
             epoch, num_epochs, n_batch, num_batches)
