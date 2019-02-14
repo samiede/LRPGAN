@@ -314,8 +314,8 @@ for epoch in range(opt.epochs):
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
             test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
             printdata = {'test_result': test_prob.item(), 'real_test_result': real_test_prob.item(),
-                         'min_test_rel': torch.min(test_fake), 'max_test_rel': torch.max(test_fake),
-                         'min_real_rel': torch.min(test_fake), 'max_real_rel': torch.max(test_fake)}
+                         'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
+                         'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
 
             img_name = logger.log_images(
                 test_fake.detach(), test_relevance.detach(), test_fake.size(0),
