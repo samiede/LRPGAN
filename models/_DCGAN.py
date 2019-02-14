@@ -794,13 +794,13 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
             probability = self.lastConvolution(output.detach())
             probability = self.sigmoid(probability.detach())
 
-            output = self.lastConvolution(output)
+            output = self.lastConvolution(output, flip)
             output = self.lastReLU(output)
             self.relevance = output
             return output.view(-1, 1).squeeze(1), probability.view(-1, 1).squeeze(1)
 
     def relprop(self, flip=True):
-        relevance = self.lastConvolution.relprop(self.relevance)
+        relevance = self.lastConvolution.relprop(self.relevance, flip)
         return self.net.relprop(relevance)
 
     def setngpu(self, ngpu):

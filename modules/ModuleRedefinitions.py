@@ -330,16 +330,16 @@ class LastConvolutionEps(nn.Conv2d):
         # Input shape: minibatch x in_channels, iH x iW
         self.X = input.clone()
 
-        # if flip:
-        #
-        #     self.weight.data *= -1
-        #     self.bias.data *= -1
+        if flip:
+
+            self.weight.data *= -1
+            self.bias.data *= -1
 
         output = super().forward(input)
 
-        # if flip:
-        #     self.weight.data *= -1
-        #     self.bias.data *= -1
+        if flip:
+            self.weight.data *= -1
+            self.bias.data *= -1
 
         return output
 
@@ -362,9 +362,9 @@ class LastConvolutionEps(nn.Conv2d):
             iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
                                 * var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(iself.weight)
 
-            # if flip:
-            #     iself.weight.data *= -1
-            #     iself.bias.data *= -1
+            if flip:
+                iself.weight.data *= -1
+                iself.bias.data *= -1
 
             iX = torch.tensor(iself.X.data, requires_grad=True)
             Z = iself(iX) + self.epsilon
@@ -394,9 +394,9 @@ class LastConvolutionEps(nn.Conv2d):
             iself.load_state_dict(self.state_dict())
             iself.X = self.X.clone()
 
-            # if flip:
-            #     iself.weight.data *= -1
-            #     iself.bias.data *= -1
+            if flip:
+                iself.weight.data *= -1
+                iself.bias.data *= -1
 
             iX = torch.tensor(iself.X.data, requires_grad=True)
             Z = iself(iX) + self.epsilon
