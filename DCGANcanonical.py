@@ -277,29 +277,6 @@ for epoch in range(opt.epochs):
             real_test_result, real_test_prob = canonical(real_test)
             real_test_relevance = canonical.relprop()
 
-            print('Equal test relu: ', np.allclose(test_result.detach().cpu().numpy(), dtest_result.detach().cpu().numpy()))
-            if not np.allclose(test_result.detach().cpu().numpy(), dtest_result.detach().cpu().numpy()):
-                print('canonical: {} : discriminator: {}'.format(test_result.item(), dtest_result.item()))
-                print("Max abs diff relu: ", (test_result - dtest_result).abs().max().item())
-                print("MSE diff relu: ", nn.MSELoss()(test_result, dtest_result.detach()).item())
-            print('Equal real relu: ', np.allclose(real_test_result.detach().cpu().numpy(), dreal_test_result.detach().cpu().numpy()))
-            if not np.allclose(real_test_result.detach().cpu().numpy(), dreal_test_result.detach().cpu().numpy()):
-                print('canonical: {} : discriminator: {}'.format(real_test_result.item(), dreal_test_result.item()))
-                print("Max abs diff real relu: ", (real_test_result - dreal_test_result).abs().max().item())
-                print("MSE diff real relu: ", nn.MSELoss()(real_test_result, dreal_test_result.detach()).item())
-            print('Equal test fake sig: ', np.allclose(test_prob.detach().cpu().numpy(), dtest_prob.detach().cpu().numpy()))
-            if not np.allclose(test_prob.detach().cpu().numpy(), dtest_prob.detach().cpu().numpy()):
-                print('canonical: {} : discriminator: {}'.format(test_prob.item(), dtest_prob.item()))
-                print("Max abs diff sig: ", (test_prob - dtest_prob).abs().max().item())
-                print("MSE diff sig: ", nn.MSELoss()(test_prob, dtest_prob.detach()).item())
-            print('Equal test real sig: ', np.allclose(real_test_prob.detach().cpu().numpy(), dreal_test_prob.detach().cpu().numpy()))
-            if not np.allclose(real_test_prob.detach().cpu().numpy(), dreal_test_prob.detach().cpu().numpy()):
-                print('canonical: {} : discriminator: {}'.format(real_test_prob.item(), dreal_test_prob.item()))
-                print("Max abs diff real sig: ", (real_test_prob - dreal_test_prob).abs().max().item())
-                print("MSE diff real sig: ", nn.MSELoss()(real_test_prob, dreal_test_prob.detach()).item())
-
-
-
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 canonical.setngpu(opt.ngpu)
