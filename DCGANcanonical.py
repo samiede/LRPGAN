@@ -251,12 +251,12 @@ for epoch in range(opt.epochs):
             test_fake = generator(fixed_noise)
             test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
 
-            discriminator.eval()
+            # discriminator.eval()
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
             # canonical.passBatchNormParametersToConvolution()
             # canonical.removeBatchNormLayers()
-            canonical.eval()
+            # canonical.eval()
 
             # TODO:
             # - try: test_fake = test_fake.detach()
