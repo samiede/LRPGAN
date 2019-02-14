@@ -770,7 +770,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
             # )
         )
 
-        self.lastConvolution = nnrd.NextConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4',
+        self.lastConvolution = nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4',
                                                        stride=1,
                                                        padding=0)
 
@@ -794,7 +794,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
             probability = self.lastConvolution(output.detach())
             probability = self.sigmoid(probability.detach())
 
-            output = self.lastConvolution(output, flip)
+            output = self.lastConvolution(output, flip=flip)
             output = self.lastReLU(output)
             self.relevance = output
             return output.view(-1, 1).squeeze(1), probability.view(-1, 1).squeeze(1)
