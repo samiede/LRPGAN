@@ -308,8 +308,8 @@ for epoch in range(opt.epochs):
             del canonical
 
             # Add up relevance of all color channels
-            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
+            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            # real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
 
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
             test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
