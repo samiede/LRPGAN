@@ -709,7 +709,7 @@ class DiscriminatorNetLessCheckerboardAlternate(nn.Module):
 
 class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
 
-    def __init__(self, nc, ndf, alpha, beta, ngpu=1):
+    def __init__(self, nc, ndf, alpha, ngpu=1):
         super(DiscriminatorNetLessCheckerboardToCanonical, self).__init__()
 
         self.relevance = None

@@ -155,12 +155,12 @@ def weights_init(m):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-generator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ngf, ngpu).to(gpu)
+generator = dcgm.GeneratorNetLessCheckerboardToCanonical(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
 
-discriminator = dcgm.DiscriminatorNetLessCheckerboard(nc, ndf, alpha, ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     discriminator.load_state_dict(torch.load(opt.loadG))
