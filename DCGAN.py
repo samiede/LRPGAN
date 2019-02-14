@@ -249,7 +249,7 @@ for epoch in range(opt.epochs):
                 discriminator.setngpu(1)
 
             # eval needs to be set so batch norm works with batch size of 1
-            discriminator.eval()
+            # discriminator.eval()
             test_result = discriminator(test_fake)
             test_relevance = discriminator.relprop()
 
@@ -258,7 +258,7 @@ for epoch in range(opt.epochs):
             real_test_result = discriminator(real_test)
             real_test_relevance = discriminator.relprop()
 
-            discriminator.train()
+            # discriminator.train()
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 discriminator.setngpu(opt.ngpu)

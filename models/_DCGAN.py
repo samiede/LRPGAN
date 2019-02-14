@@ -783,6 +783,8 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
         else:
             output = self.net(x)
 
+        return output.view(-1, 1).squeeze(1)
+
         if self.training:
             # output = self.lastConvolution(output)
             # output = self.sigmoid(output)

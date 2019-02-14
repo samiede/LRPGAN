@@ -187,7 +187,6 @@ print('Created Logger')
 
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
-        batch_data = batch_data
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
 
@@ -273,7 +272,6 @@ for epoch in range(opt.epochs):
             test_result = canonical(test_fake)
             # test_relevance = canonical.relprop()
 
-            discriminator.eval()
             # Relevance propagation on real image
             real_test.requires_grad = True
             real_test_result = canonical(real_test)
@@ -290,11 +288,11 @@ for epoch in range(opt.epochs):
             # print("Max abs diff sigmoid: ", (test_prob - dtest_prob).abs().max().item())
             # print("MSE diff sigmoid: ", nn.MSELoss()(test_prob, dtest_prob.detach()).item())
 
-            discriminator.train()
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 canonical.setngpu(opt.ngpu)
             discriminator.train()
+            canonical.train()
             del canonical
 
             # Add up relevance of all color channels
