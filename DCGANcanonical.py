@@ -259,10 +259,6 @@ for epoch in range(opt.epochs):
             discriminator.eval()
             canonical.eval()
 
-            # TODO:
-            # - try: test_fake = test_fake.detach()
-            #        test_fake.requires_grad = True
-
             # set ngpu to one, so relevance propagation works
             if (opt.ngpu > 1):
                 canonical.setngpu(1)
@@ -280,9 +276,12 @@ for epoch in range(opt.epochs):
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 canonical.setngpu(opt.ngpu)
+                
             discriminator.train()
             canonical.train()
-            del canonical
+
+
+            # del canonical
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
@@ -290,6 +289,7 @@ for epoch in range(opt.epochs):
 
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
             test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
+
             printdata = {'test_result': test_prob.item(), 'real_test_result': real_test_prob.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
@@ -311,5 +311,5 @@ for epoch in range(opt.epochs):
     Logger.epoch += 1
 
     # do checkpointing
-    torch.save(discriminator.state_dict(), '%s/generator.pth' % (checkpointdir))
-    torch.save(generator.state_dict(), '%s/discriminator.pth' % (checkpointdir))
+    torch.save(discriminator.state_dict(), '%s/generator_epoch_{}.pth'.format(str(epoch)) % (checkpointdir))
+    torch.save(generator.state_dict(), '%s/discriminator_epoch_{}.pth'.format(str(epoch)) % (checkpointdir))
