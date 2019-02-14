@@ -216,9 +216,12 @@ class NextConvolution(nn.Conv2d):
 
         var_sqrt = torch.sqrt(var + eps)
 
-        self.weight.data = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var.reshape(self.out_channels, 1,
+        w = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var.reshape(self.out_channels, 1,
                                                                                                    1, 1)
-        self.bias.data = ((self.bias - mean) * gamma) / var + beta
+        b = ((self.bias - mean) * gamma) / var + beta
+
+        self.weight = nn.Parameter(w)
+        self.bias = nn.Parameter(b)
 
 
 class NextConvolutionEps(nn.Conv2d):
@@ -304,9 +307,12 @@ class NextConvolutionEps(nn.Conv2d):
 
         var_sqrt = torch.sqrt(var + eps)
 
-        self.weight.data = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var.reshape(self.out_channels, 1,
+        w = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var.reshape(self.out_channels, 1,
                                                                                                    1, 1)
-        self.bias.data = ((self.bias - mean) * gamma) / var + beta
+        b = ((self.bias - mean) * gamma) / var + beta
+
+        self.weight = nn.Parameter(w)
+        self.bias = nn.Parameter(b)
 
 
 class LastConvolutionEps(nn.Conv2d):

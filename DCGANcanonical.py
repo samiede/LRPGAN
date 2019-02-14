@@ -253,11 +253,19 @@ for epoch in range(opt.epochs):
 
             # discriminator.eval()
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
+            disc_dict = discriminator.state_dict()
             canonical.load_state_dict(discriminator.state_dict())
             canonical.passBatchNormParametersToConvolution()
             canonical.removeBatchNormLayers()
+            after_disc_dict = discriminator.state_dict()
             discriminator.eval()
             canonical.eval()
+
+            for i, j in zip(disc_dict, after_disc_dict):
+                if i[1] == j[1]:
+                    print('Yes')
+
+
 
 
 
