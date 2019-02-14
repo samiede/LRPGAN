@@ -155,7 +155,7 @@ def weights_init(m):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
+generator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
@@ -254,8 +254,8 @@ for epoch in range(opt.epochs):
             # discriminator.eval()
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
-            canonical.passBatchNormParametersToConvolution()
-            canonical.removeBatchNormLayers()
+            # canonical.passBatchNormParametersToConvolution()
+            # canonical.removeBatchNormLayers()
             discriminator.eval()
             canonical.eval()
 
