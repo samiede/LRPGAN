@@ -792,11 +792,12 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
         else:
             probability = self.lastConvolution(output.detach())
             probability = self.sigmoid(probability.detach())
+            return probability.view(-1, 1).squeeze(1)
 
-            output = self.lastConvolution(output)
-            output = self.lastReLU(output)
-            self.relevance = output
-            return output.view(-1, 1).squeeze(1), probability.view(-1, 1).squeeze(1)
+            # output = self.lastConvolution(output)
+            # output = self.lastReLU(output)
+            # self.relevance = output
+            # return output.view(-1, 1).squeeze(1), probability.view(-1, 1).squeeze(1)
 
     def relprop(self, flip=True):
         relevance = self.lastConvolution.relprop(self.relevance)

@@ -267,26 +267,28 @@ for epoch in range(opt.epochs):
             if (opt.ngpu > 1):
                 canonical.setngpu(1)
 
-            dtest_result, dtest_prob = discriminator(test_fake)
-            test_result, test_prob = canonical(test_fake)
-            test_relevance = canonical.relprop()
+            # dtest_result, dtest_prob = discriminator(test_fake)
+            dtest_result = discriminator(test_fake)
+            # test_result, test_prob = canonical(test_fake)
+            test_result = canonical(test_fake)
+            # test_relevance = canonical.relprop()
 
             discriminator.eval()
             # Relevance propagation on real image
             real_test.requires_grad = True
-            real_test_result, real_test_prob = canonical(real_test)
-            dreal_test_result, dreal_test_prob = discriminator(real_test)
-            real_test_relevance = canonical.relprop()
+            real_test_result = canonical(real_test)
+            dreal_test_result  = discriminator(real_test)
+            # real_test_relevance = canonical.relprop()
 
             print('Equal relu: ', np.allclose(test_result.detach().cpu().numpy(), dtest_result.detach().cpu().numpy()))
             print('canonical: {} : discriminator: {}'.format(test_result.item(), dtest_result.item()))
-            print('Equal sigmoid: ', np.allclose(test_prob.detach().cpu().numpy(), dtest_prob.detach().cpu().numpy()))
-            print('canonical: {} : discriminator: {}'.format(test_prob.item(), dtest_prob.item()))
+            # print('Equal sigmoid: ', np.allclose(test_prob.detach().cpu().numpy(), dtest_prob.detach().cpu().numpy()))
+            # print('canonical: {} : discriminator: {}'.format(test_prob.item(), dtest_prob.item()))
 
             print("Max abs diff relu: ", (test_result - dtest_result).abs().max().item())
             print("MSE diff relu: ", nn.MSELoss()(test_result, dtest_result.detach()).item())
-            print("Max abs diff sigmoid: ", (test_prob - dtest_prob).abs().max().item())
-            print("MSE diff sigmoid: ", nn.MSELoss()(test_prob, dtest_prob.detach()).item())
+            # print("Max abs diff sigmoid: ", (test_prob - dtest_prob).abs().max().item())
+            # print("MSE diff sigmoid: ", nn.MSELoss()(test_prob, dtest_prob.detach()).item())
 
             discriminator.train()
             # set ngpu back to opt.ngpu
@@ -296,17 +298,17 @@ for epoch in range(opt.epochs):
             del canonical
 
             # Add up relevance of all color channels
-            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
+            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            # real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
 
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
-            test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
-            printdata = {'test_result': test_prob.item(), 'real_test_result': real_test_prob.item(),
-                         'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
-                         'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
+            # test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
+            printdata = {'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
+                         'min_test_rel': torch.min(test_fake), 'max_test_rel': torch.max(test_fake),
+                         'min_real_rel': torch.min(test_fake), 'max_real_rel': torch.max(test_fake)}
 
             img_name = logger.log_images(
-                test_fake.detach(), test_relevance.detach(), test_fake.size(0),
+                test_fake.detach(), test_fake.detach(), test_fake.size(0),
                 epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
