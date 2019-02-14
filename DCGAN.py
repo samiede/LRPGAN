@@ -150,7 +150,7 @@ if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
 
 # discriminator = DiscriminatorNet(ngpu).to(gpu)
-discriminator = dcgm.DiscriminatorNetLessCheckerboardAlternate(nc, ndf, alpha, ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboard(nc, ndf, alpha, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     discriminator.load_state_dict(torch.load(opt.loadG))
