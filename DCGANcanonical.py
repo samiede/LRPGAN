@@ -252,6 +252,7 @@ for epoch in range(opt.epochs):
             test_fake = generator(fixed_noise)
             test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
 
+            discriminator.eval()
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
             canonical.passBatchNormParametersToConvolution()
@@ -266,7 +267,6 @@ for epoch in range(opt.epochs):
             if (opt.ngpu > 1):
                 canonical.setngpu(1)
 
-            discriminator.eval()
             dtest_result, dtest_prob = discriminator(test_fake)
             test_result, test_prob = canonical(test_fake)
             test_relevance = canonical.relprop()
@@ -279,9 +279,9 @@ for epoch in range(opt.epochs):
             real_test_relevance = canonical.relprop()
 
             print('Equal relu: ', np.allclose(test_result.detach().cpu().numpy(), dtest_result.detach().cpu().numpy()))
-            print('{} : {}'.format(test_result.item(), dtest_result.item()))
+            print('canonical: {} : discriminator: {}'.format(test_result.item(), dtest_result.item()))
             print('Equal sigmoid: ', np.allclose(test_prob.detach().cpu().numpy(), dtest_prob.detach().cpu().numpy()))
-            print('{} : {}'.format(test_prob.item(), dtest_prob.item()))
+            print('canonical: {} : discriminator: {}'.format(test_prob.item(), dtest_prob.item()))
 
             print("Max abs diff relu: ", (test_result - dtest_result).abs().max().item())
             print("MSE diff relu: ", nn.MSELoss()(test_result, dtest_result.detach()).item())
@@ -294,7 +294,7 @@ for epoch in range(opt.epochs):
                 canonical.setngpu(opt.ngpu)
             discriminator.train()
             del canonical
-            
+
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
             real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
