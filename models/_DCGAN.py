@@ -761,20 +761,21 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
             ])
             ),
             # state size. (ndf*8) x 4 x 4
-            nnrd.Layer(OrderedDict([
-                ('conv6',
-                    nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4', stride=1,
-                                            padding=0)),
-                ('sigmoid', nn.Sigmoid())
-            ])
-            )
+            # nnrd.Layer(OrderedDict([
+            #     ('conv6',
+            #         nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4', stride=1,
+            #                                 padding=0)),
+            #     ('sigmoid', nn.Sigmoid())
+            # ])
+            # )
         )
 
-        # self.lastConvolution = nnrd.NextConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4', stride=1,
-        #                                     padding=0)
-        #
-        # self.sigmoid = nn.Sigmoid()
-        # self.lastReLU = nnrd.ReLu()
+        self.lastConvolution = nnrd.NextConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4',
+                                                       stride=1,
+                                                       padding=0)
+
+        self.sigmoid = nn.Sigmoid()
+        self.lastReLU = nnrd.ReLu()
 
     def forward(self, x, flip=True):
 
@@ -783,25 +784,20 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
         else:
             output = self.net(x)
 
-        return output.view(-1, 1).squeeze(1)
-
         if self.training:
-            # output = self.lastConvolution(output)
-            # output = self.sigmoid(output)
+            output = self.lastConvolution(output)
+            output = self.sigmoid(output)
             return output.view(-1, 1).squeeze(1)
 
         # relevance propagation
         else:
-            # probability = self.lastConvolution(output.detach())
-            # probability = self.sigmoid(probability.detach())
-            # return probability.view(-1, 1).squeeze(1)
-            return output.view(-1, 1).squeeze(1)
+            probability = self.lastConvolution(output.detach())
+            probability = self.sigmoid(probability.detach())
 
-
-            # output = self.lastConvolution(output)
-            # output = self.lastReLU(output)
-            # self.relevance = output
-            # return output.view(-1, 1).squeeze(1), probability.view(-1, 1).squeeze(1)
+            output = self.lastConvolution(output)
+            output = self.lastReLU(output)
+            self.relevance = output
+            return output.view(-1, 1).squeeze(1), probability.view(-1, 1).squeeze(1)
 
     def relprop(self, flip=True):
         relevance = self.lastConvolution.relprop(self.relevance)
