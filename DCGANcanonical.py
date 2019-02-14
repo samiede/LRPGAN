@@ -279,6 +279,7 @@ for epoch in range(opt.epochs):
             if (opt.ngpu > 1):
                 canonical.setngpu(opt.ngpu)
             discriminator.train()
+            canonical.train()
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
