@@ -191,6 +191,7 @@ for epoch in range(opt.epochs):
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
 
+
         ############################
         # Train Discriminator
         ###########################
@@ -251,12 +252,11 @@ for epoch in range(opt.epochs):
             test_fake = generator(fixed_noise)
             test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
 
-            # discriminator.eval()
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
-            # canonical.passBatchNormParametersToConvolution()
-            # canonical.removeBatchNormLayers()
-            # canonical.eval()
+            canonical.passBatchNormParametersToConvolution()
+            canonical.removeBatchNormLayers()
+            canonical.eval()
 
             # TODO:
             # - try: test_fake = test_fake.detach()
@@ -266,13 +266,27 @@ for epoch in range(opt.epochs):
             if (opt.ngpu > 1):
                 canonical.setngpu(1)
 
+            discriminator.eval()
+            dtest_result, dtest_prob = discriminator(test_fake)
             test_result, test_prob = canonical(test_fake)
             test_relevance = canonical.relprop()
 
+            discriminator.eval()
             # Relevance propagation on real image
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
+            dreal_test_result, dreal_test_prob = discriminator(real_test)
             real_test_relevance = canonical.relprop()
+
+            print('Equal relu: ', np.allclose(test_result.detach().cpu().numpy(), dtest_result.detach().cpu().numpy()))
+            print('{} : {}'.format(test_result.item(), dtest_result.item()))
+            print('Equal sigmoid: ', np.allclose(test_prob.detach().cpu().numpy(), dtest_prob.detach().cpu().numpy()))
+            print('{} : {}'.format(test_prob.item(), dtest_prob.item()))
+
+            print("Max abs diff relu: ", (test_result - dtest_result).abs().max().item())
+            print("MSE diff relu: ", nn.MSELoss()(test_result, dtest_result.detach()).item())
+            print("Max abs diff sigmoid: ", (test_prob - dtest_prob).abs().max().item())
+            print("MSE diff sigmoid: ", nn.MSELoss()(test_prob, dtest_prob.detach()).item())
 
             discriminator.train()
             # set ngpu back to opt.ngpu
