@@ -254,8 +254,8 @@ for epoch in range(opt.epochs):
             # discriminator.eval()
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
-            # canonical.passBatchNormParametersToConvolution()
-            # canonical.removeBatchNormLayers()
+            canonical.passBatchNormParametersToConvolution()
+            canonical.removeBatchNormLayers()
             discriminator.eval()
             canonical.eval()
 
