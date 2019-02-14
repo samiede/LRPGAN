@@ -155,7 +155,7 @@ def weights_init(m):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-generator = dcgm.GeneratorNetLessCheckerboardToCanonical(nc, ngf, ngpu).to(gpu)
+generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     generator.load_state_dict(torch.load(opt.loadG))
