@@ -269,13 +269,13 @@ for epoch in range(opt.epochs):
 
             dtest_result, dtest_prob = discriminator(test_fake)
             test_result, test_prob = canonical(test_fake)
-            # test_relevance = canonical.relprop()
+            test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
             real_test.requires_grad = True
             dreal_test_result, dreal_test_prob  = discriminator(real_test)
             real_test_result, real_test_prob = canonical(real_test)
-            # real_test_relevance = canonical.relprop()
+            real_test_relevance = canonical.relprop()
 
             print('Equal test relu: ', np.allclose(test_result.detach().cpu().numpy(), dtest_result.detach().cpu().numpy()))
             if not np.allclose(test_result.detach().cpu().numpy(), dtest_result.detach().cpu().numpy()):
@@ -308,17 +308,17 @@ for epoch in range(opt.epochs):
             del canonical
 
             # Add up relevance of all color channels
-            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            # real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
+            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
 
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
-            # test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
+            test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
             printdata = {'test_result': test_prob.item(), 'real_test_result': real_test_prob.item(),
                          'min_test_rel': torch.min(test_fake), 'max_test_rel': torch.max(test_fake),
                          'min_real_rel': torch.min(test_fake), 'max_real_rel': torch.max(test_fake)}
 
             img_name = logger.log_images(
-                test_fake.detach(), test_fake.detach(), test_fake.size(0),
+                test_fake.detach(), test_relevance.detach(), test_fake.size(0),
                 epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
