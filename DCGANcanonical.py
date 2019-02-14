@@ -262,6 +262,7 @@ for epoch in range(opt.epochs):
             # set ngpu to one, so relevance propagation works
             if (opt.ngpu > 1):
                 canonical.setngpu(1)
+                discriminator.setngpu(1)
 
             dtest_result, dtest_prob = discriminator(test_fake)
             test_result, test_prob = canonical(test_fake)
@@ -276,7 +277,8 @@ for epoch in range(opt.epochs):
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 canonical.setngpu(opt.ngpu)
-                
+                discriminator.setngpu(opt.ngpu)
+
             discriminator.train()
             canonical.train()
 
