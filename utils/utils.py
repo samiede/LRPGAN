@@ -296,7 +296,7 @@ def graymap(x):
 def visualize(x, colormap):
     N = len(x)
     assert (N <= 16)
-    print('If this is zero, I should crash', np.abs(x).max(x))
+    print('If this is zero, I should crash', np.abs(x).max())
     try:
         x = colormap(x / np.abs(x).max())
     except ZeroDivisionError:
