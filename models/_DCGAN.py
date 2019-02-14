@@ -765,7 +765,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
                 ('conv6',
                     nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4', stride=1,
                                             padding=0)),
-                ('sigmoid', nn.Sigmoid)
+                ('sigmoid', nn.Sigmoid())
             ])
             )
         )
