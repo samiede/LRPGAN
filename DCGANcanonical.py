@@ -261,14 +261,6 @@ for epoch in range(opt.epochs):
             discriminator.eval()
             canonical.eval()
 
-            for i, j in zip(disc_dict, after_disc_dict):
-                if i[1] == j[1]:
-                    print('Yes')
-
-
-
-
-
             # TODO:
             # - try: test_fake = test_fake.detach()
             #        test_fake.requires_grad = True
