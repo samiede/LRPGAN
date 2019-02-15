@@ -15,14 +15,13 @@ import torch.utils.data
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
-import modules.ModuleRedefinitions as nnrd
+import torch.distributions as distr
 import models._DCGAN as dcgm
 from utils.utils import Logger
 import subprocess
 import copy
 import numpy as np
 import errno
-
 
 # add parameters
 parser = argparse.ArgumentParser()
@@ -43,6 +42,7 @@ parser.add_argument('--nolabel', help='Print the images without labeling of prob
 parser.add_argument('--freezeG', help='Freezes training for G after epochs / 3 epochs', action='store_true')
 parser.add_argument('--freezeD', help='Freezes training for D after epochs / 3 epochs', action='store_true')
 parser.add_argument('--fepochs', help='Number of epochs before freeze', type=int, default=None)
+parser.add_argument('--lr', help='Learning rate for optimizer, 0.00005 for lrp?', type=float, default=0.0002)
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -110,9 +110,25 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
 
 # misc. helper functions
 
+def draw_chisquare(size):
+    samples = distr.Chi2(size).sample()
+    samples = (samples - samples.mean()) / samples.std()
+    return samples
+
+
+def added_gaussian_chi(ins, stddev):
+    if stddev > 0:
+        noise = torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
+        chi = draw_chisquare(ins).to(gpu)
+        chi_scaled_noise = noise * chi
+        return ins + chi_scaled_noise
+    return ins
+
+
 def added_gaussian(ins, stddev):
     if stddev > 0:
-        return ins + torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
+        noise = torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
+        return ins + noise
     return ins
 
 
@@ -167,9 +183,8 @@ if opt.loadD != '':
 
 # init optimizer + loss
 
-# Learning rate halved from 0.0002 -> 0.00005
-d_optimizer = optim.Adam(discriminator.parameters(), lr=0.00005, betas=(0.5, 0.999))
-g_optimizer = optim.Adam(generator.parameters(), lr=0.00005, betas=(0.5, 0.999))
+d_optimizer = optim.Adam(discriminator.parameters(), lr=float(opt.lr), betas=(0.5, 0.999))
+g_optimizer = optim.Adam(generator.parameters(), lr=float(opt.lr), betas=(0.5, 0.999))
 
 loss = nn.BCELoss()
 
@@ -191,7 +206,6 @@ for epoch in range(opt.epochs):
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
 
-
         ############################
         # Train Discriminator
         ###########################
@@ -203,7 +217,7 @@ for epoch in range(opt.epochs):
         # save input without noise for relevance comparison
         real_test = real_data[0].clone().unsqueeze(0)
         # Add noise to input
-        real_data = added_gaussian(real_data, add_noise_var)
+        real_data = added_gaussian_chi(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
@@ -215,7 +229,7 @@ for epoch in range(opt.epochs):
         label_fake = generator_target(batch_size).to(gpu)
 
         # Add noise to fake data
-        fake = added_gaussian(fake, add_noise_var)
+        fake = added_gaussian_chi(fake, add_noise_var)
         fake = F.pad(fake, (p, p, p, p), value=-1)
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
@@ -248,6 +262,7 @@ for epoch in range(opt.epochs):
                      d_error_total, g_err.item(), d_real, d_fake_1, d_fake_2))
 
         if n_batch % 100 == 0:
+            Logger.batch = n_batch
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
             test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
@@ -257,34 +272,32 @@ for epoch in range(opt.epochs):
             canonical.load_state_dict(discriminator.state_dict())
             canonical.passBatchNormParametersToConvolution()
             canonical.removeBatchNormLayers()
-            discriminator.eval()
+            # discriminator.eval()
             canonical.eval()
 
             # set ngpu to one, so relevance propagation works
             if (opt.ngpu > 1):
                 canonical.setngpu(1)
-                discriminator.setngpu(1)
+                # discriminator.setngpu(1)
 
-            dtest_result, dtest_prob = discriminator(test_fake)
+            # dtest_result, dtest_prob = discriminator(test_fake)
             test_result, test_prob = canonical(test_fake)
             test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
             real_test.requires_grad = True
-            dreal_test_result, dreal_test_prob  = discriminator(real_test)
+            # dreal_test_result, dreal_test_prob = discriminator(real_test)
             real_test_result, real_test_prob = canonical(real_test)
             real_test_relevance = canonical.relprop()
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
                 canonical.setngpu(opt.ngpu)
-                discriminator.setngpu(opt.ngpu)
+                # discriminator.setngpu(opt.ngpu)
 
-            discriminator.train()
-            canonical.train()
-
-
-            # del canonical
+            # discriminator.train()
+            # canonical.train()
+            del canonical
 
             # Add up relevance of all color channels
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)

@@ -24,6 +24,7 @@ highest = 1.0
 class Logger:
 
     epoch = 0
+    batch = 0
 
     def __init__(self, model_name, data_name, dir_name):
         self.model_name = model_name
@@ -239,7 +240,7 @@ class Logger:
     @staticmethod
     def save_intermediate_heatmap(relevance, name):
         i = 0
-        out_dir = './output/DCGANcanonical/intermediate/' + str(Logger.epoch)
+        out_dir = './output/DCGANcanonical/intermediate/epoch {}/batch {}'.format(str(Logger.epoch), str(Logger.batch))
 
         Logger._make_dir(out_dir)
 
@@ -254,10 +255,20 @@ class Logger:
             relevance = relevance.cpu()
         plt.imshow(relevance.numpy())
         plt.axis('off')
-        while os.path.exists('{}/_layer_{}_({:d}).png'.format(out_dir, name, i)):
+
+        while os.path.exists('{}/_layer_{}_({}).png'.format(out_dir, name, Logger.getMarker(i))):
             i += 1
-        fig.savefig('{}/_layer_{}_({:d}).png'.format(out_dir, name, i), dpi=50)
+
+        fig.savefig('{}/_layer_{}_({}).png'.format(out_dir, name, Logger.getMarker(i)), dpi=50)
         plt.close()
+
+
+    @staticmethod
+    def getMarker(i):
+        if i == 0:
+            return 'g'
+        else:
+            return 'r'
 
 
 # --------------------------------------
