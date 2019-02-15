@@ -167,8 +167,9 @@ if opt.loadD != '':
 
 # init optimizer + loss
 
-d_optimizer = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
-g_optimizer = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+# Learning rate halved from 0.0002 -> 0.00005
+d_optimizer = optim.Adam(discriminator.parameters(), lr=0.00005, betas=(0.5, 0.999))
+g_optimizer = optim.Adam(generator.parameters(), lr=0.00005, betas=(0.5, 0.999))
 
 loss = nn.BCELoss()
 
@@ -251,7 +252,7 @@ for epoch in range(opt.epochs):
             test_fake = generator(fixed_noise)
             test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
 
-            # discriminator.eval()
+            # clone network to remove batch norm for relevance propagation
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
             canonical.passBatchNormParametersToConvolution()
