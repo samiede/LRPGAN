@@ -103,7 +103,7 @@ class FirstConvolution(nn.Conv2d):
 
             R = X * iself_b - L * pself_b - H * nself_b
 
-        print('Input layer weight max: {:.6f} min: {:.6f}'.format(self.weight.max(), self.weight.min()))
+        print('Input layer weight max: {:.6f}, min: {:.6f}, mean: {:.6f}'.format(self.weight.max(), self.weight.min(), self.weight.mean()))
         return R.detach()
 
 
