@@ -52,7 +52,7 @@ ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
-p = 2
+p = 1
 # fepochs = int(opt.fepochs)
 print(opt)
 
@@ -111,16 +111,16 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
 # misc. helper functions
 
 def draw_chisquare(size):
-    samples = distr.Chi2(size).sample()
-    samples = (samples - samples.mean()) / samples.std()
+    chi_distr = distr.Chi2(1.0)
+    samples = chi_distr.sample((size,))
     return samples
 
 
 def added_gaussian_chi(ins, stddev):
     if stddev > 0:
         noise = torch.Tensor(torch.randn(ins.size()).to(gpu) * stddev)
-        chi = draw_chisquare(ins).to(gpu)
-        chi_scaled_noise = noise * chi
+        chi = draw_chisquare(ins.size(0)).to(gpu)
+        chi_scaled_noise = noise * chi.reshape(-1, 1, 1, 1)
         return ins + chi_scaled_noise
     return ins
 
@@ -167,6 +167,12 @@ def weights_init(m):
     elif classname.find('BatchNorm') != -1:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
+
+
+def batchPrint(m):
+    classname = m.__class__.__name__
+    if classname.find('BatchNorm') != -1:
+        print('Batch norm mean weights: {}, mean bias: {}'.format(m.weight.mean(), m.bias.mean()))
 
 
 # generator = GeneratorNet(ngpu).to(gpu)
@@ -217,7 +223,7 @@ for epoch in range(opt.epochs):
         # save input without noise for relevance comparison
         real_test = real_data[0].clone().unsqueeze(0)
         # Add noise to input
-        real_data = added_gaussian(real_data, add_noise_var)
+        real_data = added_gaussian_chi(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
@@ -229,7 +235,7 @@ for epoch in range(opt.epochs):
         label_fake = generator_target(batch_size).to(gpu)
 
         # Add noise to fake data
-        fake = added_gaussian(fake, add_noise_var)
+        fake = added_gaussian_chi(fake, add_noise_var)
         fake = F.pad(fake, (p, p, p, p), value=-1)
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
@@ -266,6 +272,8 @@ for epoch in range(opt.epochs):
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
             test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
+
+            discriminator.apply(batchPrint)
 
             # clone network to remove batch norm for relevance propagation
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
@@ -306,7 +314,8 @@ for epoch in range(opt.epochs):
             test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
             test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
 
-            printdata = {'test_result': test_prob.item(), 'real_test_result': real_test_prob.item(),
+            printdata = {'test_prob': test_prob.item(), 'real_test_prob': real_test_prob.item(),
+                         'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
 
@@ -316,7 +325,7 @@ for epoch in range(opt.epochs):
             )
 
             # show images inline
-            comment = '{:.4f}-{:.4f}'.format(printdata['test_result'], printdata['real_test_result'])
+            comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
 
             subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
                              outf + '/mnist/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])

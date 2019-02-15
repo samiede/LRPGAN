@@ -103,6 +103,7 @@ class FirstConvolution(nn.Conv2d):
 
             R = X * iself_b - L * pself_b - H * nself_b
 
+        print('Input layer weight max: {:.6f} min: {:.6f}'.format(self.weight.max(), self.weight.min()))
         return R.detach()
 
 
@@ -139,10 +140,8 @@ class NextConvolution(nn.Conv2d):
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
             pself.alpha = self.alpha
-            pself.bias.data *= 0
+            pself.bias.data = torch.max(torch.Tensor(1).zero_(), pself.bias)
             pself.weight.data = pself.weight * (gamma / var).reshape(pself.out_channels, 1, 1, 1)
-            # pself.weight.data = pself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(pself.weight) \
-            #                     / var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(pself.weight)
             pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
 
             # Negative weights
@@ -151,10 +150,8 @@ class NextConvolution(nn.Conv2d):
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
             nself.beta = self.beta
-            nself.bias.data *= 0
+            nself.bias.data = torch.min(torch.Tensor(1).zero_(), nself.bias)
             nself.weight.data = nself.weight * (gamma / var).reshape(nself.out_channels, 1, 1, 1)
-            # nself.weight.data = nself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(nself.weight) \
-            #                     * var.view(-1, 1, 1, 1).expand_as(nself.weight)
             nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
             pX = pself.X + 1e-9
@@ -172,21 +169,21 @@ class NextConvolution(nn.Conv2d):
         # If not, continue as usual
         else:
 
+            # positive
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             pself.load_state_dict(self.state_dict())
             pself.X = self.X.clone()
             pself.alpha = self.alpha
-
             pself.bias.data = torch.max(torch.Tensor(1).zero_(), pself.bias)
             pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
 
+            # negative
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             nself.load_state_dict(self.state_dict())
             nself.X = self.X.clone()
             nself.beta = self.beta
-
             nself.bias.data = torch.min(torch.Tensor(1).zero_(), nself.bias)
             nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
 
@@ -217,7 +214,7 @@ class NextConvolution(nn.Conv2d):
         var_sqrt = torch.sqrt(var + eps)
 
         w = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var_sqrt.reshape(self.out_channels, 1,
-                                                                                                   1, 1)
+                                                                                         1, 1)
         b = ((self.bias - mean) * gamma) / var_sqrt + beta
 
         self.weight = nn.Parameter(w)
@@ -308,7 +305,7 @@ class NextConvolutionEps(nn.Conv2d):
         var_sqrt = torch.sqrt(var + eps)
 
         w = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var_sqrt.reshape(self.out_channels, 1,
-                                                                                                   1, 1)
+                                                                                         1, 1)
         b = ((self.bias - mean) * gamma) / var_sqrt + beta
 
         self.weight = nn.Parameter(w)
@@ -331,7 +328,6 @@ class LastConvolutionEps(nn.Conv2d):
         self.X = input.clone()
 
         if flip:
-
             self.weight.data *= -1
             self.bias.data *= -1
 

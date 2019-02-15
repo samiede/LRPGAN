@@ -105,7 +105,7 @@ class Logger:
                           plot_horizontal=False):
         out_dir = '{}'.format(self.data_subdir)
         Logger._make_dir(out_dir)
-        comment = '{:.4f}-{:.4f}'.format(printdata['test_result'], printdata['real_test_result'])
+        comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
 
         if noLabel:
             # Plot and save horizontal
@@ -149,9 +149,9 @@ class Logger:
             axarr[n, 0].imshow(np.moveaxis(image.numpy(), 0, -1))
             axarr[n, 0].axis('off')
             if n % 2 == 0:
-                axarr[n, 0].set_title('{:.6f}'.format(printdata['test_result']), fontsize=50)
+                axarr[n, 0].set_title('{:.6f} / {:.6f}'.format(printdata['test_prob'], printdata['test_result']), fontsize=50)
             else:
-                axarr[n, 0].set_title('{:.6f}'.format(printdata['real_test_result']), fontsize=50)
+                axarr[n, 0].set_title('{:.6f} / {:.6f}'.format(printdata['real_test_prob'], printdata['real_test_result']), fontsize=50)
             ttl = axarr[n, 0].title
             ttl.set_position([.5, 1.05])
 
