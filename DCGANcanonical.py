@@ -217,7 +217,7 @@ for epoch in range(opt.epochs):
         # save input without noise for relevance comparison
         real_test = real_data[0].clone().unsqueeze(0)
         # Add noise to input
-        real_data = added_gaussian_chi(real_data, add_noise_var)
+        real_data = added_gaussian(real_data, add_noise_var)
         prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
@@ -229,7 +229,7 @@ for epoch in range(opt.epochs):
         label_fake = generator_target(batch_size).to(gpu)
 
         # Add noise to fake data
-        fake = added_gaussian_chi(fake, add_noise_var)
+        fake = added_gaussian(fake, add_noise_var)
         fake = F.pad(fake, (p, p, p, p), value=-1)
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
