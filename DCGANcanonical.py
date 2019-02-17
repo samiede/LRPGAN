@@ -105,7 +105,7 @@ elif opt.dataset == 'anime':
     root_dir = 'dataset/faces'
     dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
         [
-            transforms.Resize(opt.imageSize),
+            transforms.Resize(opt.imageSize, opt.imageSize),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
@@ -379,7 +379,7 @@ for epoch in range(opt.epochs):
             comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
 
             subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
-                             outf + '/mnist/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
+                             outf + '/' + opt.dataset + '/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)

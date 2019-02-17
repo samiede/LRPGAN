@@ -641,7 +641,7 @@ class DiscriminatorNetLessCheckerboardAlternate(nn.Module):
 
         self.net = nnrd.RelevanceNetAlternate(
             nnrd.Layer(
-                nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=3, stride=1, padding=0),
+                nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=5, stride=1, padding=0),
                 nnrd.ReLu(),
             ),
             nnrd.Layer(
@@ -717,7 +717,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
 
         self.net = nnrd.RelevanceNetAlternate(
             nnrd.Layer(OrderedDict([
-                ('conv1', nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=5, stride=1, padding=0)),
+                ('conv1', nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=3, stride=1, padding=0)),
                 ('relu1', nnrd.ReLu()),
             ])
             ),
