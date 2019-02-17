@@ -53,7 +53,7 @@ ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
-p = 2
+p = 1
 
 print(opt)
 
