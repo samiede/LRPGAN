@@ -278,8 +278,8 @@ for epoch in range(opt.epochs):
         d_fake_1 = prediction_fake.mean().item()
 
         # gradient penalty
-        alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
-        x_hat = torch.tensor(alpha * real_data.data + (1 - alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
+        grad_alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
+        x_hat = torch.tensor(alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
                          requires_grad=True)
         pred_hat = discriminator(x_hat)
         gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()),
