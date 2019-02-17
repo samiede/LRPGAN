@@ -7,6 +7,8 @@ from tensorboardX import SummaryWriter
 from IPython import display
 import torch
 from matplotlib import pyplot as plt
+import matplotlib
+import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 if torch.cuda.is_available():
@@ -22,7 +24,6 @@ highest = 1.0
 
 
 class Logger:
-
     epoch = 0
     batch = 0
 
@@ -149,9 +150,11 @@ class Logger:
             axarr[n, 0].imshow(np.moveaxis(image.numpy(), 0, -1))
             axarr[n, 0].axis('off')
             if n % 2 == 0:
-                axarr[n, 0].set_title('{:.6f} / {:.6f}'.format(printdata['test_prob'], printdata['test_result']), fontsize=50)
+                axarr[n, 0].set_title('{:.6f} / {:.6f}'.format(printdata['test_prob'], printdata['test_result']),
+                                      fontsize=50)
             else:
-                axarr[n, 0].set_title('{:.6f} / {:.6f}'.format(printdata['real_test_prob'], printdata['real_test_result']), fontsize=50)
+                axarr[n, 0].set_title(
+                    '{:.6f} / {:.6f}'.format(printdata['real_test_prob'], printdata['real_test_result']), fontsize=50)
             ttl = axarr[n, 0].title
             ttl.set_position([.5, 1.05])
 
@@ -262,7 +265,6 @@ class Logger:
         fig.savefig('{}/_layer_{}_({}).png'.format(out_dir, name, Logger.getMarker(i)), dpi=50)
         plt.close()
 
-
     @staticmethod
     def getMarker(i):
         if i == 0:
@@ -323,3 +325,23 @@ def visualize(x, colormap):
     # x = x.transpose([0, 2, 1, 3, 4]).reshape([1 * 32, N * 32, 3])
     # x = np.kron(x, np.ones([2, 2, 1]))
     # PIL.Image.fromarray((x * 255).astype('byte'), 'RGB').save('./data/images/VGAN/MNIST/' + name)
+
+
+
+
+# set the colormap and centre the colorbar
+class MidpointNormalize(colors.Normalize):
+    """
+	Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+	e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+	"""
+
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))

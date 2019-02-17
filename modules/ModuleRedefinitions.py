@@ -103,7 +103,7 @@ class FirstConvolution(nn.Conv2d):
 
             R = X * iself_b - L * pself_b - H * nself_b
 
-        print('Input layer weight max: {:.6f}, min: {:.6f}, mean: {:.6f}'.format(self.weight.max(), self.weight.min(), self.weight.mean()))
+        # print('Input layer weight max: {:.6f}, min: {:.6f}, mean: {:.6f}'.format(self.weight.max(), self.weight.min(), self.weight.mean()))
         return R.detach()
 
 
@@ -201,6 +201,7 @@ class NextConvolution(nn.Conv2d):
             R = pX * C
 
         utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
+        # print('Layer {}: {}'.format(self.name, R.abs().sum().item()))
         return R
 
     def incorporateBatchNorm(self, bn):
@@ -292,6 +293,7 @@ class NextConvolutionEps(nn.Conv2d):
             # R = iself.X * C
 
         utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
+        # print('Layer {}: {}'.format(self.name, R.abs().sum().item()))
         return R
 
     def incorporateBatchNorm(self, bn):
@@ -412,6 +414,7 @@ class LastConvolutionEps(nn.Conv2d):
             # print('Last convolution', np.allclose(R.detach().cpu().numpy(), r.detach().cpu().numpy()))
 
         utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
+        # print('Last layer', R.abs().sum())
         return R
 
 

@@ -18,10 +18,10 @@ import torchvision.utils as vutils
 import torch.distributions as distr
 import models._DCGAN as dcgm
 from utils.utils import Logger
+from utils.utils import MidpointNormalize
 import subprocess
-import copy
-import numpy as np
 import errno
+import matplotlib.pyplot as plt
 
 # add parameters
 parser = argparse.ArgumentParser()
@@ -43,6 +43,7 @@ parser.add_argument('--freezeG', help='Freezes training for G after epochs / 3 e
 parser.add_argument('--freezeD', help='Freezes training for D after epochs / 3 epochs', action='store_true')
 parser.add_argument('--fepochs', help='Number of epochs before freeze', type=int, default=None)
 parser.add_argument('--lr', help='Learning rate for optimizer, 0.00005 for lrp?', type=float, default=0.0002)
+parser.add_argument('--eps_init', help='Change epsilon for eps rule after loading state dict', type=float, default=None)
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -52,8 +53,8 @@ ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
-p = 1
-# fepochs = int(opt.fepochs)
+p = 2
+
 print(opt)
 
 if opt.fepochs:
@@ -61,7 +62,6 @@ if opt.fepochs:
 
 else:
     freezeEpochs = opt.epochs // 3
-# freezeEpochs = opt.epochs // 3
 
 try:
     shutil.rmtree(outf)
@@ -100,6 +100,17 @@ if opt.dataset == 'mnist':
                                  ]
                              ))
     nc = 1
+
+elif opt.dataset == 'anime':
+    root_dir = 'dataset/faces'
+    dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
+        [
+            transforms.Resize(opt.imageSize),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ]
+    ))
+    nc = 3
 else:
     pass
 
@@ -180,12 +191,33 @@ ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
 generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
-    generator.load_state_dict(torch.load(opt.loadG))
+    dict = torch.load(opt.loadG, map_location='cpu')
+    if torch.__version__ == '0.4.0':
+        del dict['net.1.num_batches_tracked']
+        del dict['net.4.num_batches_tracked']
+        del dict['net.7.num_batches_tracked']
+        del dict['net.10.num_batches_tracked']
+        del dict['net.13.num_batches_tracked']
+    generator.load_state_dict(dict)
 
 discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
-    discriminator.load_state_dict(torch.load(opt.loadG))
+    dict = torch.load(opt.loadD, map_location='cpu')
+    if torch.__version__ == '0.4.0':
+        del dict['net.1.bn2.num_batches_tracked']
+        del dict['net.2.bn3.num_batches_tracked']
+        del dict['net.3.bn4.num_batches_tracked']
+        del dict['net.4.bn5.num_batches_tracked']
+    discriminator.load_state_dict(dict)
+
+
+if opt.eps_init:
+    def eps_init(m):
+        classname = m.__class__.__name__
+        if classname.find('Eps') != -1:
+            m.epsilon = float(opt.eps_init)
+    discriminator.apply(eps_init)
 
 # init optimizer + loss
 
@@ -311,16 +343,35 @@ for epoch in range(opt.epochs):
             test_relevance = torch.sum(test_relevance, 1, keepdim=True)
             real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
 
-            test_fake = torch.cat((test_fake[:, :, p:-p, p:-p], real_test[:, :, p:-p, p:-p]))
-            test_relevance = torch.cat((test_relevance[:, :, p:-p, p:-p], real_test_relevance[:, :, p:-p, p:-p]))
+            bp = p
+            test_fake_c = torch.cat((test_fake[:, :, bp:-bp, bp:-bp], real_test[:, :, bp:-bp, bp:-bp]))
+            test_relevance_c = torch.cat(
+                (test_relevance[:, :, bp:-bp, bp:-bp], real_test_relevance[:, :, bp:-bp, bp:-bp]))
 
             printdata = {'test_prob': test_prob.item(), 'real_test_prob': real_test_prob.item(),
                          'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
 
+            ###### Using matplotlib Color Map ######
+            # minrel = test_relevance_c.min()
+            # maxrel = test_relevance_c.max()
+            # midpoint = 0
+            # plt.imshow(test_relevance[0, 0, bp:-bp, bp:-bp].numpy(), cmap=plt.cm.RdBu_r, clim=(minrel, maxrel),
+            #            norm=MidpointNormalize(midpoint=midpoint, vmin=minrel, vmax=maxrel))
+            # # plt.pcolor(np.array(test_relevance[0, 0, bp:-bp, bp:-bp].numpy()), cmap=plt.cm.seismic, vmin=test_relevance.min(), vmax=test_relevance.max())
+            # plt.colorbar()
+            # plt.show()
+            # plt.imshow(real_test_relevance[0, 0, bp:-bp, bp:-bp].numpy(), cmap=plt.cm.RdBu_r, clim=(minrel, maxrel),
+            #            norm=MidpointNormalize(midpoint=midpoint, vmin=minrel, vmax=maxrel))
+            # # plt.pcolor(np.array(test_relevance[0, 0, bp:-bp, bp:-bp].numpy()), cmap=plt.cm.seismic, vmin=test_relevance.min(), vmax=test_relevance.max())
+            # plt.colorbar()
+            # plt.show()
+
+            ###### Using matplotlib Color Map ######
+
             img_name = logger.log_images(
-                test_fake.detach(), test_relevance.detach(), test_fake.size(0),
+                test_fake_c.detach(), test_relevance_c.detach(), test_fake.size(0),
                 epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
@@ -336,5 +387,5 @@ for epoch in range(opt.epochs):
     Logger.epoch += 1
 
     # do checkpointing
-    torch.save(discriminator.state_dict(), '%s/generator_epoch_{}.pth'.format(str(epoch)) % (checkpointdir))
-    torch.save(generator.state_dict(), '%s/discriminator_epoch_{}.pth'.format(str(epoch)) % (checkpointdir))
+    torch.save(generator.state_dict(), '%s/generator_epoch_{}.pth'.format(str(epoch)) % (checkpointdir))
+    torch.save(discriminator.state_dict(), '%s/discriminator_epoch_{}.pth'.format(str(epoch)) % (checkpointdir))
