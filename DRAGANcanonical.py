@@ -191,6 +191,7 @@ def batchPrint(m):
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
 generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
+# generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     dict = torch.load(opt.loadG, map_location='cpu')
@@ -202,6 +203,7 @@ if opt.loadG != '':
         del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
 
+# discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, ndf=ndf, alpha=alpha, ngpu=ngpu).to(gpu)
 discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
@@ -280,7 +282,7 @@ for epoch in range(opt.epochs):
         # gradient penalty
         grad_alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
         x_hat = torch.tensor(
-            alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
+            grad_alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
             requires_grad=True)
         pred_hat = discriminator(x_hat)
         gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()),
