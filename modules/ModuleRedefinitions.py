@@ -200,7 +200,7 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
-        utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
+        # utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
         # print('Layer {}: {}'.format(self.name, R.abs().sum().item()))
         return R
 
@@ -292,7 +292,7 @@ class NextConvolutionEps(nn.Conv2d):
             # C = torch.autograd.grad(ZA, iX, SA)[0]
             # R = iself.X * C
 
-        utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
+        # utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
         # print('Layer {}: {}'.format(self.name, R.abs().sum().item()))
         return R
 
@@ -413,7 +413,7 @@ class LastConvolutionEps(nn.Conv2d):
 
             # print('Last convolution', np.allclose(R.detach().cpu().numpy(), r.detach().cpu().numpy()))
 
-        utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
+        # utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
         # print('Last layer', R.abs().sum())
         return R
 

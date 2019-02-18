@@ -46,7 +46,6 @@ parser.add_argument('--lr', help='Learning rate for optimizer, 0.00005 for lrp?'
 parser.add_argument('--eps_init', help='Change epsilon for eps rule after loading state dict', type=float, default=None)
 parser.add_argument('--d_lambda', help='Factor for gradient penalty, default=10', type=float, default=10)
 
-
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
 checkpointdir = '{}/{}'.format(outf, 'checkpoints')
@@ -214,12 +213,13 @@ if opt.loadD != '':
         del dict['net.4.bn5.num_batches_tracked']
     discriminator.load_state_dict(dict)
 
-
 if opt.eps_init:
     def eps_init(m):
         classname = m.__class__.__name__
         if classname.find('Eps') != -1:
             m.epsilon = float(opt.eps_init)
+
+
     discriminator.apply(eps_init)
 
 # init optimizer + loss
@@ -279,11 +279,12 @@ for epoch in range(opt.epochs):
 
         # gradient penalty
         grad_alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
-        x_hat = torch.tensor(alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
-                         requires_grad=True)
+        x_hat = torch.tensor(
+            alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
+            requires_grad=True)
         pred_hat = discriminator(x_hat)
         gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()),
-                         create_graph=True, retain_graph=True, only_inputs=True)[0]
+                                        create_graph=True, retain_graph=True, only_inputs=True)[0]
         gradient_penalty = lambda_ * ((gradients.norm(2, dim=1) - 1) ** 2).mean()
         gradient_penalty.backward()
 

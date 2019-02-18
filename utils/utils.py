@@ -241,6 +241,79 @@ class Logger:
             if e.errno != errno.EEXIST:
                 raise
 
+    def save_heatmap_batch(self, images, relevance, probability, relu_result, num):
+
+        min = []
+        max = []
+        for i in range(len(relevance)):
+            min.append(torch.min(relevance[i]))
+            max.append(torch.max(relevance[i]))
+
+        relevance = visualize(relevance.cpu().numpy() if torch.cuda.is_available()
+                              else relevance.numpy(), heatmap)
+        if type(relevance) == np.ndarray:
+            relevance = torch.from_numpy(relevance)
+        if torch.cuda.is_available():
+            images = images.cpu().detach()
+
+        # concat images and relevance in comb pattern
+        relevance = relevance.permute(0, 3, 1, 2)
+        images_comb = torch.Tensor()
+        for pair in zip(images, relevance):
+            comb = torch.cat((pair[0].unsqueeze(0), pair[1].unsqueeze(0)))
+            images_comb = torch.cat((images_comb, comb))
+        images = images_comb
+
+        out_dir = '{}'.format(self.data_subdir)
+        Logger._make_dir(out_dir)
+
+        num_plots = images.size(0) // 2
+        cols = 2
+        fig, axarr = plt.subplots(num_plots, cols)
+        fig = plt.gcf()
+        fig.set_size_inches(32,  num_plots * 32)
+        index = 0
+        for n in range(0, num_plots):
+            image = vutils.make_grid(images[index], normalize=True, scale_each=True, pad_value=0)
+            image = np.moveaxis(image.detach().numpy(), 0, -1)
+            if num_plots > 1:
+                ax0 = axarr[n, 0]
+                ax1 = axarr[n, 1]
+            else:
+                ax0 = axarr[n]
+                ax1 = axarr[n + 1]
+
+            ax0.imshow(image)
+            ax0.axis('off')
+            ax0.set_title('{:.6f} / {:.6f}'.format(probability[n], relu_result[n]),
+                                  fontsize=50)
+
+            ttl = ax0.title
+            ttl.set_position([.5, 1.05])
+
+            image = vutils.make_grid(images[index + 1], scale_each=True, pad_value=0)
+            data = np.moveaxis(image.detach().numpy(), 0, -1)
+            ax1.imshow(data)
+            ttl = ax1.title
+            ttl.set_position([.5, 1.05])
+
+            ax1.set_title('{:.5f} / {:.5f}'.format(min[n], max[n]),
+                                  fontsize=50)
+            ax1.axis('off')
+
+            index += 2
+        # else:
+        #     fig = plt.figure(figsize=(32, 16), facecolor='white')
+        #     image = vutils.make_grid(images, normalize=True, scale_each=True, pad_value=1)
+        #     plt.imshow(np.moveaxis(image.detach().numpy(), 0, -1))
+        #     plt.axis('off')
+        #     plt.gcf()
+
+
+        fig.savefig('{}/{}.png'.format(out_dir, num), dpi=50)
+        fig.savefig('{}/{}.pdf'.format(out_dir, num), dpi=100)
+        plt.close()
+
     @staticmethod
     def save_intermediate_heatmap(relevance, name):
         i = 0
@@ -345,4 +418,3 @@ class MidpointNormalize(colors.Normalize):
         # simple example...
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
-
