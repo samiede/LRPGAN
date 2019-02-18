@@ -33,7 +33,7 @@ parser.add_argument('--ndf', type=int, default=64, help='number of discriminator
 parser.add_argument('--epochs', type=int, default=25, help='number of epochs to train for')
 parser.add_argument('--outf', default='output', help='folder to output images and model checkpoints')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
-parser.add_argument('--imageSize', type=int, default=64)
+parser.add_argument('--imageSize', type=int, default=128)
 parser.add_argument('--loadG', default='', help='path to generator (to continue training')
 parser.add_argument('--loadD', default='', help='path to discriminator (to continue training')
 parser.add_argument('--alpha', default=1, type=int)
@@ -191,7 +191,7 @@ def batchPrint(m):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
+generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     dict = torch.load(opt.loadG, map_location='cpu')
@@ -203,7 +203,7 @@ if opt.loadG != '':
         del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
 
-discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
+discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     dict = torch.load(opt.loadD, map_location='cpu')

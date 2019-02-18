@@ -761,3 +761,45 @@ class DiscriminatorNet(nn.Module):
 
     def setngpu(self, ngpu):
         self.ngpu = ngpu
+
+
+class ResidualBlock(nn.Module):
+  def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, bias=False):
+    super(ResidualBlock, self).__init__()
+
+    self.conv1 = nn.Conv2d(in_channels, out_channels,
+                  kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.bn1 = nn.BatchNorm2d(out_channels)
+    self.relu1 = nn.PReLU()
+    self.conv2 = nn.Conv2d(out_channels, out_channels,
+                  kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.bn2 = nn.BatchNorm2d(out_channels)
+
+  def forward(self, input):
+    res_input = input
+    output = self.conv1(input)
+    output = self.bn1(output)
+    output = self.relu1(output)
+    output = self.conv2(output)
+    output = self.bn2(output)
+    output += res_input
+    return output
+
+
+class PixelshuffleBlock(nn.Module):
+  def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, bias=False, upscale_factor=2):
+    super(PixelshuffleBlock, self).__init__()
+    self.conv = nn.Conv2d(in_channels, out_channels,
+                 kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
+    self.bn = nn.BatchNorm2d(in_channels)
+    self.relu = nn.PReLU()
+
+  def forward(self, tensor):
+    output = self.conv(tensor)
+    output = self.pixel_shuffle(output)
+    output = self.bn(output)
+    output = self.relu(output)
+    return output
+
+
