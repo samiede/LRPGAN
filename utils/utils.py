@@ -304,7 +304,7 @@ class Logger:
         index = 0
         for n in range(0, num_plots):
             image = vutils.make_grid(images[index], normalize=True, scale_each=True, pad_value=0)
-            image = np.moveaxis(image.detach().numpy(), 0, -1)
+            image = np.moveaxis(image.cpu().detach().numpy(), 0, -1)
             if num_plots > 1:
                 ax0 = axarr[n, 0]
                 ax1 = axarr[n, 1]
@@ -321,7 +321,7 @@ class Logger:
             ttl.set_position([.5, 1.05])
 
             image = vutils.make_grid(images[index + 1], scale_each=True, pad_value=0)
-            data = np.moveaxis(image.detach().numpy(), 0, -1)
+            data = np.moveaxis(image.cpu().detach().numpy(), 0, -1)
             ax1.imshow(data)
             ttl = ax1.title
             ttl.set_position([.5, 1.05])
