@@ -186,12 +186,6 @@ def weights_init(m):
         m.bias.data.fill_(0)
 
 
-def batchPrint(m):
-    classname = m.__class__.__name__
-    if classname.find('BatchNorm') != -1:
-        print('Batch norm mean weights: {}, mean bias: {}'.format(m.weight.mean(), m.bias.mean()))
-
-
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
 if not opt.resnet:
@@ -330,8 +324,6 @@ for epoch in range(opt.epochs):
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
             test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
-
-            discriminator.apply(batchPrint)
 
             # clone network to remove batch norm for relevance propagation
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
