@@ -47,6 +47,7 @@ parser.add_argument('--lr_d', help='Learning rate for optimizer, 0.00005 for lrp
 parser.add_argument('--eps_init', help='Change epsilon for eps rule after loading state dict', type=float, default=None)
 parser.add_argument('--d_lambda', help='Factor for gradient penalty, default=10', type=float, default=10)
 parser.add_argument('--cuda', help='number of GPU', type=int, default=0)
+parser.add_argument('--resnet', help='Use resnet', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -192,8 +193,10 @@ def batchPrint(m):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
-# generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
+if not opt.resnet:
+    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
+else:
+    generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     dict = torch.load(opt.loadG, map_location='cpu')
@@ -205,8 +208,10 @@ if opt.loadG != '':
         del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
 
-# discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, ndf=ndf, alpha=alpha, ngpu=ngpu).to(gpu)
-discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
+if not opt.resnet:
+    discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, ndf=ndf, alpha=alpha, ngpu=ngpu).to(gpu)
+else:
+    discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     dict = torch.load(opt.loadD, map_location='cpu')
