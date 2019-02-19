@@ -178,5 +178,3 @@ if opt.loadD:
 
         logger.save_heatmap_batch(images=batch_data, relevance=test_relevance, probability=test_prob, relu_result=test_result,
                                   num=n_batch)
-
-        logger.save_image_batch(batch_data, n_batch)

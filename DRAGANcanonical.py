@@ -48,6 +48,7 @@ parser.add_argument('--eps_init', help='Change epsilon for eps rule after loadin
 parser.add_argument('--d_lambda', help='Factor for gradient penalty, default=10', type=float, default=10)
 parser.add_argument('--cuda', help='number of GPU', type=int, default=0)
 parser.add_argument('--resnet', help='Use resnet', action='store_true')
+parser.add_argument('--gp', help='Use gradient penalty', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -286,19 +287,21 @@ for epoch in range(opt.epochs):
         d_err_fake.backward()
         d_fake_1 = prediction_fake.mean().item()
 
+        d_error_total = d_err_real.item() + d_err_fake.item()
+
         # gradient penalty
-        grad_alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
-        x_hat = torch.tensor(grad_alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
-            requires_grad=True)
-        pred_hat = discriminator(x_hat)
-        gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()),
-                                        create_graph=True, retain_graph=True, only_inputs=True)[0]
-        gradient_penalty = lambda_ * ((gradients.norm(2, dim=1) - 1) ** 2).mean()
-        gradient_penalty.backward()
+        if opt.gp:
+            grad_alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
+            x_hat = torch.tensor(grad_alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
+                                 requires_grad=True)
+            pred_hat = discriminator(x_hat)
+            gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()),
+                                            create_graph=True, retain_graph=True, only_inputs=True)[0]
+            gradient_penalty = lambda_ * ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+            gradient_penalty.backward()
+            d_error_total += gradient_penalty.item()
 
-        d_error_total = d_err_real.item() + d_err_fake.item() + gradient_penalty.item()
-
-        # only update uf we don't freeze discriminator
+        # only update uf we don't freeze discriminatorx
         if not opt.freezeD or (opt.freezeD and epoch <= freezeEpochs):
             d_optimizer.step()
 
