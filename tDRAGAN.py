@@ -36,6 +36,7 @@ parser.add_argument('--batchSize', help='number of images processed simultaneous
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--loadG', default=None, help='path to generator')
 group.add_argument('--loadD', default=None, help='path to discriminator')
+parser.add_argument('--alpha', default=1, type=int)
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -116,8 +117,8 @@ def eps_init(m):
 
 # if we want to generate stuff
 if opt.loadG:
-    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=ngpu).to(gpu)
-    dict = torch.load(opt.loadG, map_location='cpu')
+    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=ngpu)
+    dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
         del dict['net.1.num_batches_tracked']
         del dict['net.4.num_batches_tracked']
@@ -125,26 +126,29 @@ if opt.loadG:
         del dict['net.10.num_batches_tracked']
         del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
+    generator.to(gpu)
+    generator.eval()
 
     noise = torch.randn(opt.num_images, nz, 1, 1, device=gpu)
 
     images = generator(noise)
 
-    logger.save_image_batch(images)
+    logger.save_image_batch(images, num=None)
 
 # if we want to discriminate stuff
 if opt.loadD:
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                              shuffle=True, num_workers=2)
 
-    discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=1, ndf=128, ngpu=ngpu).to(gpu)
-    dict = torch.load(opt.loadD, map_location='cpu')
+    discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
         del dict['net.1.bn2.num_batches_tracked']
         del dict['net.2.bn3.num_batches_tracked']
         del dict['net.3.bn4.num_batches_tracked']
         del dict['net.4.bn5.num_batches_tracked']
     discriminator.load_state_dict(dict)
+    discriminator.to(gpu)
 
     if opt.eps_init:
         assert discriminator
@@ -158,9 +162,10 @@ if opt.loadD:
         if opt.num_images and n_batch > opt.num_images:
             break
 
-        discriminator.eval()
         discriminator.passBatchNormParametersToConvolution()
         discriminator.removeBatchNormLayers()
+        discriminator.eval()
+
         if (opt.ngpu > 1):
             discriminator.setngpu(1)
 
