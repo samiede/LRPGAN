@@ -107,7 +107,7 @@ class NonResnetDiscriminator(nn.Module):
                 [
                     ('conv_input',
                      nnrd.FirstConvolution(in_channels=nc, out_channels=32, kernel_size=3, stride=1, padding=0)),
-                    ('relu_input', nn.LeakyReLU())
+                    ('relu_input', nn.LeakyReLU(0.2))
                 ]
             )
         )
