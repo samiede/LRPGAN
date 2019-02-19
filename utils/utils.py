@@ -279,8 +279,8 @@ class Logger:
         if type(relevance) == np.ndarray:
             relevance = torch.from_numpy(relevance)
         if torch.cuda.is_available():
-            images = images.cpu().detach()
-            relevance = relevance.cpu().detach()
+            images = images.cuda()
+            relevance = relevance.cuda()
 
         # concat images and relevance in comb pattern
         relevance = relevance.permute(0, 3, 1, 2)
