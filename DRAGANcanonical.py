@@ -191,8 +191,8 @@ def batchPrint(m):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
-# generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
+# generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
+generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     dict = torch.load(opt.loadG, map_location='cpu')
@@ -204,8 +204,8 @@ if opt.loadG != '':
         del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
 
-# discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, ndf=ndf, alpha=alpha, ngpu=ngpu).to(gpu)
-discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, ndf=ndf, alpha=alpha, ngpu=ngpu).to(gpu)
+# discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     dict = torch.load(opt.loadD, map_location='cpu')
