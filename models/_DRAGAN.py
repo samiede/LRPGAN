@@ -55,43 +55,45 @@ class ResnetGenerator(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, bias=False):
-        super(ResidualBlock, self).__init__()
+  def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, bias=False):
+    super(ResidualBlock, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels, out_channels,
-                               kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu1 = nn.PReLU()
-        self.conv2 = nn.Conv2d(out_channels, out_channels,
-                               kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
-        self.bn2 = nn.BatchNorm2d(out_channels)
+    self.conv1 = nn.Conv2d(in_channels, out_channels,
+                  kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.bn1 = nn.BatchNorm2d(out_channels)
+    self.relu1 = nn.PReLU()
+    self.conv2 = nn.Conv2d(out_channels, out_channels,
+                  kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.bn2 = nn.BatchNorm2d(out_channels)
 
-    def forward(self, input):
-        res_input = input
-        output = self.conv1(input)
-        output = self.bn1(output)
-        output = self.relu1(output)
-        output = self.conv2(output)
-        output = self.bn2(output)
-        output += res_input
-        return output
+  def forward(self, input):
+    res_input = input
+    output = self.conv1(input)
+    output = self.bn1(output)
+    output = self.relu1(output)
+    output = self.conv2(output)
+    output = self.bn2(output)
+    output += res_input
+    return output
 
 
 class PixelshuffleBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, bias=False, upscale_factor=2):
-        super(PixelshuffleBlock, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels,
-                              kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
-        self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
-        self.bn = nn.BatchNorm2d(in_channels)
-        self.relu = nn.PReLU()
+  def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, bias=False, upscale_factor=2):
+    super(PixelshuffleBlock, self).__init__()
+    self.conv = nn.Conv2d(in_channels, out_channels,
+                 kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
+    self.bn = nn.BatchNorm2d(in_channels)
+    self.relu = nn.PReLU()
 
-    def forward(self, tensor):
-        output = self.conv(tensor)
-        output = self.pixel_shuffle(output)
-        output = self.bn(output)
-        output = self.relu(output)
-        return output
+  def forward(self, tensor):
+    output = self.conv(tensor)
+    output = self.pixel_shuffle(output)
+    output = self.bn(output)
+    output = self.relu(output)
+    return output
+
+
 
 
 class NonResnetDiscriminator(nn.Module):
@@ -107,7 +109,7 @@ class NonResnetDiscriminator(nn.Module):
                 [
                     ('conv_input',
                      nnrd.FirstConvolution(in_channels=nc, out_channels=32, kernel_size=3, stride=1, padding=0)),
-                    ('relu_input', nn.LeakyReLU(0.2))
+                    ('relu_input', nnrd.ReLu())
                 ]
             )
         )
@@ -144,7 +146,7 @@ class NonResnetDiscriminator(nn.Module):
         self.block_17 = self.make_block_layer(in_channels=512, out_channels=512, num_block=17, kernel_size=3, stride=1, padding=1, alpha=alpha)
         self.block_18 = self.make_block_layer(in_channels=512, out_channels=512, num_block=18, kernel_size=3, stride=1, padding=1, alpha=alpha)
 
-        self.end_6 = self.make_fill_block(in_channels=512, out_channels=1024, num_fill_block=6, kernel_size=3, stride=2, padding=1, eps=eps)
+        self.end_6 = self.make_fill_block(in_channels=512, out_channels=1024, num_fill_block=6, kernel_size=3,stride=2, padding=1, eps=eps)
 
         self.net = nnrd.RelevanceNetAlternate(
             self.input,
@@ -218,22 +220,22 @@ class NonResnetDiscriminator(nn.Module):
                 ('conv{}'.format(str(num_block)),
                  nnrd.NextConvolution(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
                                       name=str(num_block), stride=stride, padding=padding, alpha=alpha)),
-                ('relu{}'.format(str(num_block)), nn.LeakyReLU(0.2)),
+                ('relu{}'.format(str(num_block)), nnrd.ReLu()),
                 ('conv{}'.format(str(num_block + 1)),
                  nnrd.NextConvolution(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
                                       name=str(num_block + 1), stride=stride, padding=padding, alpha=alpha)),
-                ('relu{}'.format(str(num_block + 1)), nn.LeakyReLU(0.2)),
+                ('relu{}'.format(str(num_block + 1)), nnrd.ReLu()),
             ]
         ))
 
-    def make_fill_block(self, in_channels, out_channels, num_fill_block, kernel_size, alpha=1, stride=2, padding=1, bias=True, eps=None):
+    def make_fill_block(self, in_channels, out_channels, num_fill_block, kernel_size,  alpha=1, stride=2, padding=1, bias=True, eps=None):
         if eps:
             return nnrd.Layer(OrderedDict(
                 [
                     ('fill_conv{}'.format(str(num_fill_block)),
                      nnrd.NextConvolutionEps(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
-                                             name=str(num_fill_block), stride=stride, padding=padding, epsilon=eps)),
-                    ('fill_relu{}'.format(str(num_fill_block)), nn.LeakyReLU(0.2)),
+                                          name=str(num_fill_block), stride=stride, padding=padding, epsilon=eps)),
+                    ('fill_relu{}'.format(str(num_fill_block)), nnrd.ReLu()),
                 ]
             ))
 
@@ -243,7 +245,7 @@ class NonResnetDiscriminator(nn.Module):
                     ('fill_conv{}'.format(str(num_fill_block)),
                      nnrd.NextConvolution(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size,
                                           name=str(num_fill_block), stride=stride, padding=padding, alpha=alpha)),
-                    ('fill_relu{}'.format(str(num_fill_block)), nn.LeakyReLU(0.2)),
+                    ('fill_relu{}'.format(str(num_fill_block)), nnrd.ReLu()),
                 ]
             ))
 
@@ -421,7 +423,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
 
         self.net = nnrd.RelevanceNetAlternate(
             nnrd.Layer(OrderedDict([
-                ('conv1', nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=3, stride=1, padding=0)),
+                ('conv1', nnrd.FirstConvolution(in_channels=nc, out_channels=ndf, kernel_size=5, stride=1, padding=0)),
                 ('relu1', nnrd.ReLu()),
             ])
             ),
