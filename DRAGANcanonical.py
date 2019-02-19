@@ -56,7 +56,7 @@ ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
-p = 1
+p = 2
 lambda_ = float(opt.d_lambda)
 
 print(opt)

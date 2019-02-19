@@ -153,7 +153,7 @@ if opt.loadD:
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
         batch_data.requires_grad = True
 
-        if n_batch > opt.num_images:
+        if opt.num_images and n_batch > opt.num_images:
             break
 
         discriminator.eval()
@@ -171,3 +171,5 @@ if opt.loadD:
 
         logger.save_heatmap_batch(images=batch_data, relevance=test_relevance, probability=test_prob, relu_result=test_result,
                                   num=n_batch)
+
+        logger.save_image_batch(batch_data, n_batch)
