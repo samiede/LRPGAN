@@ -359,13 +359,13 @@ for epoch in range(opt.epochs):
             del canonical
 
             # Add up relevance of all color channels
-            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            # real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
+            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
 
             bp = p
             test_fake_c = torch.cat((test_fake[:, :, bp:-bp, bp:-bp], real_test[:, :, bp:-bp, bp:-bp]))
-            # test_relevance_c = torch.cat(
-            #     (test_relevance[:, :, bp:-bp, bp:-bp], real_test_relevance[:, :, bp:-bp, bp:-bp]))
+            test_relevance_c = torch.cat(
+                (test_relevance[:, :, bp:-bp, bp:-bp], real_test_relevance[:, :, bp:-bp, bp:-bp]))
 
             printdata = {'test_prob': test_prob.item(), 'real_test_prob': real_test_prob.item(),
                          'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
@@ -390,7 +390,7 @@ for epoch in range(opt.epochs):
             ###### Using matplotlib Color Map ######
 
             img_name = logger.log_images(
-                test_fake_c.detach(), test_fake_c.detach(), test_fake.size(0),
+                test_fake_c.detach(), test_relevance.detach(), test_fake.size(0),
                 epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
