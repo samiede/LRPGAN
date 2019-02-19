@@ -16,11 +16,11 @@ class ResnetGenerator(nn.Module):
         self.dense_1 = nn.Linear(nz, 64 * 16 * 16)
         self.bn_1 = nn.BatchNorm2d(64)
         self.relu_1 = nn.PReLU()
-        self.residual_layer = self.make_residual_layers(block_size=16, nc=nc)  # outn=64
+        self.residual_layer = self.make_residual_layers(block_size=16, kernel_size=3)  # outn=64
         self.conv_1 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1)
         self.bn_2 = nn.BatchNorm2d(64)
         self.relu_2 = nn.PReLU()
-        self.pixelshuffle_layer = self.make_pixelshuffle_layers(block_size=3, nc=nc)  # outn=64
+        self.pixelshuffle_layer = self.make_pixelshuffle_layers(block_size=3, kernel_size=3)  # outn=64
         self.conv_2 = nn.Conv2d(64, 3, kernel_size=9, stride=1, padding=4, bias=True)
         self.tanh_1 = nn.Tanh()
 
@@ -41,27 +41,59 @@ class ResnetGenerator(nn.Module):
         output = self.tanh_1(output)
         return output
 
-    def make_residual_layers(self, block_size=16, nc=3):
+    def make_residual_layers(self, block_size=16, kernel_size=3):
         layers = []
         for _ in range(block_size):
-            layers.append(nnrd.ResidualBlock(64, 64, nc, 1))
+            layers.append(ResidualBlock(64, 64, kernel_size, 1))
         return nn.Sequential(*layers)
 
-    def make_pixelshuffle_layers(self, block_size=3, nc=3):
+    def make_pixelshuffle_layers(self, block_size=3, kernel_size=3):
         layers = []
         for _ in range(block_size):
-            layers.append(nnrd.PixelshuffleBlock(64, 256, nc, 1))
+            layers.append(PixelshuffleBlock(64, 256, kernel_size, 1))
         return nn.Sequential(*layers)
 
 
-class Print(nn.Module):
-    def __init__(self, position):
-        super(Print, self).__init__()
-        self.position = position
+class ResidualBlock(nn.Module):
+  def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, bias=False):
+    super(ResidualBlock, self).__init__()
 
-    def forward(self, x):
-        print(self.position, x.shape)
-        return x
+    self.conv1 = nn.Conv2d(in_channels, out_channels,
+                  kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.bn1 = nn.BatchNorm2d(out_channels)
+    self.relu1 = nn.PReLU()
+    self.conv2 = nn.Conv2d(out_channels, out_channels,
+                  kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.bn2 = nn.BatchNorm2d(out_channels)
+
+  def forward(self, input):
+    res_input = input
+    output = self.conv1(input)
+    output = self.bn1(output)
+    output = self.relu1(output)
+    output = self.conv2(output)
+    output = self.bn2(output)
+    output += res_input
+    return output
+
+
+class PixelshuffleBlock(nn.Module):
+  def __init__(self, in_channels, out_channels, kernel_size, stride, padding=1, bias=False, upscale_factor=2):
+    super(PixelshuffleBlock, self).__init__()
+    self.conv = nn.Conv2d(in_channels, out_channels,
+                 kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
+    self.bn = nn.BatchNorm2d(in_channels)
+    self.relu = nn.PReLU()
+
+  def forward(self, tensor):
+    output = self.conv(tensor)
+    output = self.pixel_shuffle(output)
+    output = self.bn(output)
+    output = self.relu(output)
+    return output
+
+
 
 
 class NonResnetDiscriminator(nn.Module):
