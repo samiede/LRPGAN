@@ -252,7 +252,7 @@ class Logger:
             fig = plt.gcf()
             fig.set_size_inches(32, 32)
             image = vutils.make_grid(images[n], normalize=True, scale_each=True, pad_value=1)
-            plt.imshow(np.moveaxis(image.detach().numpy(), 0, -1))
+            plt.imshow(np.moveaxis(image.cpu().detach().numpy(), 0, -1))
             plt.axis('off')
 
             if num:
