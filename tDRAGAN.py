@@ -151,6 +151,7 @@ if opt.loadD:
         discriminator.apply(eps_init)
 
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+        batch_data = batch_data.to(gpu)
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
         batch_data.requires_grad = True
 
