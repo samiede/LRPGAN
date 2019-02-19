@@ -46,10 +46,6 @@ padding = 2
 p = padding
 
 try:
-    shutil.rmtree(outf)
-except OSError:
-    pass
-try:
     os.makedirs(outf)
 except OSError as e:
     if e.errno != errno.EEXIST:
@@ -128,6 +124,12 @@ if opt.loadG:
         del dict['net.10.num_batches_tracked']
         del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
+
+    noise = torch.randn(opt.num_images, nz, 1, 1, device=gpu)
+
+    images = generator(noise)
+
+    logger.save_image_batch(images)
 
 # if we want to discriminate stuff
 if opt.loadD:

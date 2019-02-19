@@ -241,6 +241,24 @@ class Logger:
             if e.errno != errno.EEXIST:
                 raise
 
+    def save_image_batch(self, images):
+
+        out_dir = '{}/{}'.format(self.data_subdir, 'generated')
+        Logger._make_dir(out_dir)
+
+        for n in range(0, images.size(0)):
+            fig = plt.gcf()
+            fig.set_size_inches(32, 32)
+            image = vutils.make_grid(images[n], normalize=True, scale_each=True, pad_value=1)
+            plt.imshow(np.moveaxis(image.detach().numpy(), 0, -1))
+            plt.axis('off')
+
+            fig.savefig('{}/{}.png'.format(out_dir, n), dpi=100)
+            fig.savefig('{}/{}.pdf'.format(out_dir, n), dpi=100)
+            plt.close()
+
+        vutils.save_image(images, '{}/{}.png'.format(out_dir, 'all_samples'), nrow=int(np.sqrt(images.size(0))), pad_value=1)
+
     def save_heatmap_batch(self, images, relevance, probability, relu_result, num):
 
         min = []
@@ -264,14 +282,14 @@ class Logger:
             images_comb = torch.cat((images_comb, comb))
         images = images_comb
 
-        out_dir = '{}'.format(self.data_subdir)
+        out_dir = '{}/{}'.format(self.data_subdir, 'discriminated')
         Logger._make_dir(out_dir)
 
         num_plots = images.size(0) // 2
         cols = 2
         fig, axarr = plt.subplots(num_plots, cols)
         fig = plt.gcf()
-        fig.set_size_inches(32,  num_plots * 32)
+        fig.set_size_inches(32, num_plots * 32)
         index = 0
         for n in range(0, num_plots):
             image = vutils.make_grid(images[index], normalize=True, scale_each=True, pad_value=0)
@@ -286,7 +304,7 @@ class Logger:
             ax0.imshow(image)
             ax0.axis('off')
             ax0.set_title('{:.6f} / {:.6f}'.format(probability[n], relu_result[n]),
-                                  fontsize=50)
+                          fontsize=50)
 
             ttl = ax0.title
             ttl.set_position([.5, 1.05])
@@ -298,7 +316,7 @@ class Logger:
             ttl.set_position([.5, 1.05])
 
             ax1.set_title('{:.5f} / {:.5f}'.format(min[n], max[n]),
-                                  fontsize=50)
+                          fontsize=50)
             ax1.axis('off')
 
             index += 2
@@ -308,7 +326,6 @@ class Logger:
         #     plt.imshow(np.moveaxis(image.detach().numpy(), 0, -1))
         #     plt.axis('off')
         #     plt.gcf()
-
 
         fig.savefig('{}/{}.png'.format(out_dir, num), dpi=50)
         fig.savefig('{}/{}.pdf'.format(out_dir, num), dpi=100)
