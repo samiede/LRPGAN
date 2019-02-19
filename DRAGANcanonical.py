@@ -45,6 +45,7 @@ parser.add_argument('--fepochs', help='Number of epochs before freeze', type=int
 parser.add_argument('--lr', help='Learning rate for optimizer, 0.00005 for lrp?', type=float, default=0.0002)
 parser.add_argument('--eps_init', help='Change epsilon for eps rule after loading state dict', type=float, default=None)
 parser.add_argument('--d_lambda', help='Factor for gradient penalty, default=10', type=float, default=10)
+parser.add_argument('--cuda', help='number of GPU', type=int, default=0)
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -82,7 +83,7 @@ except OSError:
 
 # CUDA everything
 cudnn.benchmark = True
-gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+gpu = torch.device('cuda:{}'.format(opt.cuda) if torch.cuda.is_available() else 'cpu')
 torch.set_default_dtype(torch.float32)
 if torch.cuda.is_available():
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
