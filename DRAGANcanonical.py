@@ -228,8 +228,8 @@ if opt.eps_init:
 
 # init optimizer + loss
 
-d_optimizer = optim.Adam(discriminator.parameters(), lr=float(opt.lr), betas=(0.5, 0.999))
-g_optimizer = optim.Adam(generator.parameters(), lr=float(opt.lr), betas=(0.5, 0.999))
+d_optimizer = optim.Adam(discriminator.parameters(), lr=float(opt.lr_d), betas=(0.5, 0.999))
+g_optimizer = optim.Adam(generator.parameters(), lr=float(opt.lr_g), betas=(0.5, 0.999))
 
 loss = nn.BCELoss()
 
