@@ -28,7 +28,7 @@ class Logger:
     epoch = 0
     batch = 0
 
-    def __init__(self, model_name, data_name, dir_name):
+    def __init__(self, model_name, data_name, dir_name, make_fresh=True):
         self.model_name = model_name
         self.data_name = data_name
 
@@ -37,7 +37,8 @@ class Logger:
         self.log_subdir = '{}/{}'.format(dir_name, 'runs/')
 
         out_dir = '{}'.format(self.data_subdir)
-        Logger._make_fresh_dir(out_dir)
+        if make_fresh:
+            Logger._make_fresh_dir(out_dir)
 
         # TensorBoard
         self.writer = SummaryWriter(log_dir=self.log_subdir, comment=self.comment)
@@ -249,10 +250,12 @@ class Logger:
         Logger._make_dir(out_dir_png)
 
         for n in range(0, images.size(0)):
-            fig = plt.gcf()
-            fig.set_size_inches(32, 32)
-            image = vutils.make_grid(images[n], normalize=True, scale_each=True, pad_value=1)
-            plt.imshow(np.moveaxis(image.cpu().detach().numpy(), 0, -1))
+            fig = plt.figure(figsize=(64, 64), facecolor='white')
+            ax = plt.axes()
+            ax.xaxis.set_visible(False)
+            ax.yaxis.set_visible(False)
+            image = vutils.make_grid(images[n], normalize=True, scale_each=True, padding=0, pad_value=0)
+            plt.imshow(np.moveaxis(image.cpu().detach().numpy(), 0, -1), aspect='auto')
             plt.axis('off')
 
             if num:
@@ -260,8 +263,9 @@ class Logger:
             else:
                 name = n
 
-            fig.savefig('{}/{}.png'.format(out_dir_png, name), dpi=100)
-            fig.savefig('{}/{}.pdf'.format(out_dir_pdf, name), dpi=100)
+            print('Saving image {}'.format(n))
+            fig.savefig('{}/{}.png'.format(out_dir_png, name), bbox_inches='tight', pad_inches=0, transparent=True, dpi=100)
+            fig.savefig('{}/{}.pdf'.format(out_dir_pdf, name), bbox_inches='tight', pad_inches=0, transparent=True, dpi=100)
             plt.close()
 
         vutils.save_image(images, '{}/{}.png'.format(out_dir_png, 'all_samples'), nrow=int(np.sqrt(images.size(0))), pad_value=1, normalize=True, scale_each=True)

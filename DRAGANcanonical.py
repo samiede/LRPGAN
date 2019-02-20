@@ -49,6 +49,7 @@ parser.add_argument('--d_lambda', help='Factor for gradient penalty, default=10'
 parser.add_argument('--cuda', help='number of GPU', type=int, default=0)
 parser.add_argument('--resnet', help='Use resnet', action='store_true')
 parser.add_argument('--gp', help='Use gradient penalty', action='store_true')
+parser.add_argument('--cont', help='Continue training -> Does not delete dir', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -194,7 +195,7 @@ else:
     generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
-    dict = torch.load(opt.loadG, map_location='cpu')
+    dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
         del dict['net.1.num_batches_tracked']
         del dict['net.4.num_batches_tracked']
@@ -202,6 +203,8 @@ if opt.loadG != '':
         del dict['net.10.num_batches_tracked']
         del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
+    generator.to(gpu)
+
 
 if not opt.resnet:
     discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, ndf=ndf, alpha=alpha, ngpu=ngpu).to(gpu)
@@ -209,13 +212,15 @@ else:
     discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
-    dict = torch.load(opt.loadD, map_location='cpu')
+    dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
         del dict['net.1.bn2.num_batches_tracked']
         del dict['net.2.bn3.num_batches_tracked']
         del dict['net.3.bn4.num_batches_tracked']
         del dict['net.4.bn5.num_batches_tracked']
     discriminator.load_state_dict(dict)
+    discriminator.to(gpu)
+
 
 if opt.eps_init:
     def eps_init(m):
@@ -242,7 +247,7 @@ initial_additive_noise_var = 0.1
 add_noise_var = 0.1
 
 # Create Logger instance
-logger = Logger(model_name='LRPGAN', data_name=opt.dataset, dir_name=outf)
+logger = Logger(model_name='LRPGAN', data_name=opt.dataset, dir_name=outf, make_fresh=True if not opt.cont else False)
 print('Created Logger')
 # training
 

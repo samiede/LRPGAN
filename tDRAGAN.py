@@ -53,7 +53,7 @@ except OSError as e:
         raise
 
 # Create Logger instance
-logger = Logger(model_name='LRPGAN', data_name=opt.dataset, dir_name=outf)
+logger = Logger(model_name='LRPGAN', data_name=opt.dataset, dir_name=outf, make_fresh=False)
 print('Created Logger')
 
 # CUDA everything
@@ -138,7 +138,7 @@ if opt.loadG:
 # if we want to discriminate stuff
 if opt.loadD:
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
-                                             shuffle=True, num_workers=2)
+                                             shuffle=False, num_workers=2)
 
     discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
