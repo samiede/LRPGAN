@@ -222,6 +222,147 @@ class NextConvolution(nn.Conv2d):
         self.bias = nn.Parameter(b)
 
 
+class LastConvolution(nn.Conv2d):
+
+    def __init__(self, in_channels, out_channels, kernel_size, name, stride=1, padding=2, dilation=1, groups=1,
+                 bias=True, alpha=1):
+        super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias)
+
+        self.name = name
+        # Variables for Relevance Propagation
+        self.X = None
+        self.alpha = alpha
+        self.beta = alpha - 1
+
+    def forward(self, input, flip=False):
+        # Input shape: minibatch x in_channels, iH x iW
+        self.X = input.clone()
+
+        if flip:
+            self.weight.data *= -1
+            self.bias.data *= -1
+
+        output = super().forward(input)
+
+        if flip:
+            self.weight.data *= -1
+            self.bias.data *= -1
+
+        return output
+
+    def relprop(self, R, flip=False):
+
+        # Is the layer before Batch Norm?
+        if type(R) is tuple:
+            R, params = R
+
+            gamma, var, eps, beta, mean = params['gamma'], params['var'], params['eps'], params['beta'], \
+                                          params['mean']
+            var_sqrt = torch.sqrt(var + eps)
+
+            # Positive weights
+            pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
+            pself.load_state_dict(self.state_dict())
+            if flip:
+                pself.weight.data *= -1
+                pself.bias.data *= -1
+
+            pself.X = self.X.clone()
+            pself.alpha = self.alpha
+            pself.bias.data = torch.max(torch.Tensor(1).zero_(), pself.bias)
+            pself.weight.data = pself.weight * (gamma / var).reshape(pself.out_channels, 1, 1, 1)
+            pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
+
+            # Negative weights
+            nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
+            nself.load_state_dict(self.state_dict())
+            if flip:
+                nself.weight.data *= -1
+                nself.bias.data *= -1
+            nself.X = self.X.clone()
+            nself.beta = self.beta
+            nself.bias.data = torch.min(torch.Tensor(1).zero_(), nself.bias)
+            nself.weight.data = nself.weight * (gamma / var).reshape(nself.out_channels, 1, 1, 1)
+            nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
+
+            pX = pself.X + 1e-9
+            nX = nself.X + 1e-9
+
+            ZA = pself(pX)
+            SA = pself.alpha * torch.div(R, ZA)
+
+            ZB = nself(nX)
+            SB = - nself.beta * torch.div(R, ZB)
+
+            C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
+            R = pself.X * C
+
+        # If not, continue as usual
+        else:
+
+            # positive
+            pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
+            pself.load_state_dict(self.state_dict())
+            if flip:
+                pself.weight.data *= -1
+                pself.bias.data *= -1
+
+            pself.X = self.X.clone()
+            pself.alpha = self.alpha
+            pself.bias.data = torch.max(torch.Tensor(1).zero_(), pself.bias)
+            pself.weight.data = torch.max(torch.Tensor([1e-9]), pself.weight)
+
+            # negative
+            nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
+                               self.padding)
+            nself.load_state_dict(self.state_dict())
+            if flip:
+                nself.weight.data *= -1
+                nself.bias.data *= -1
+
+            nself.X = self.X.clone()
+            nself.beta = self.beta
+            nself.bias.data = torch.min(torch.Tensor(1).zero_(), nself.bias)
+            nself.weight.data = torch.min(torch.Tensor([-1e-9]), nself.weight)
+
+            pX = pself.X + 1e-9
+            nX = nself.X + 1e-9
+
+            ZA = pself(pX)
+            SA = pself.alpha * torch.div(R, ZA)
+
+            ZB = nself(nX)
+            SB = - nself.beta * torch.div(R, ZB)
+            ones = torch.Tensor([[1, 1], [1, 1]]).unsqueeze(0).unsqueeze(0)
+
+            C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
+            R = pX * C
+
+        # utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
+        # print('Layer {}: {}'.format(self.name, R.abs().sum().item()))
+        return R
+
+    def incorporateBatchNorm(self, bn):
+
+        gamma = bn.weight
+        beta = bn.bias
+        mean = bn.running_mean
+        var = bn.running_var
+        eps = bn.eps
+
+        var_sqrt = torch.sqrt(var + eps)
+
+        w = (self.weight * gamma.reshape(self.out_channels, 1, 1, 1)) / var_sqrt.reshape(self.out_channels, 1,
+                                                                                         1, 1)
+        b = ((self.bias - mean) * gamma) / var_sqrt + beta
+
+        self.weight = nn.Parameter(w)
+        self.bias = nn.Parameter(b)
+
+
 class NextConvolutionEps(nn.Conv2d):
 
     def __init__(self, in_channels, out_channels, kernel_size, name, stride=1, padding=2, dilation=1, groups=1,

@@ -268,7 +268,8 @@ class Logger:
             fig.savefig('{}/{}.pdf'.format(out_dir_pdf, name), bbox_inches='tight', pad_inches=0, transparent=True, dpi=100)
             plt.close()
 
-        vutils.save_image(images, '{}/{}.png'.format(out_dir_png, 'all_samples'), nrow=int(np.sqrt(images.size(0))), pad_value=1, normalize=True, scale_each=True)
+        vutils.save_image(images, '{}/{}.png'.format(out_dir_png, 'all_samples'), nrow=int(np.sqrt(images.size(0))), pad_value=1, normalize=True,
+                          scale_each=True)
 
     def save_heatmap_batch(self, images, relevance, probability, relu_result, num):
 
@@ -298,7 +299,6 @@ class Logger:
         Logger._make_dir(out_dir_pdf)
         out_dir_png = '{}/{}/png'.format(self.data_subdir, 'discriminated')
         Logger._make_dir(out_dir_png)
-
 
         num_plots = images.size(0) // 2
         cols = 2
@@ -409,17 +409,50 @@ def graymap(x):
     return np.concatenate([x, x, x], axis=-1) * 0.5 + 0.5
 
 
+def gregoire_black_firered(R):
+
+    # R = R / np.max(np.abs(R))
+    x = R
+    x = x[..., np.newaxis]
+
+
+    hrp = np.clip(x - 0.00, 0, 0.25) / 0.25
+    hgp = np.clip(x - 0.25, 0, 0.25) / 0.25
+    hbp = np.clip(x - 0.50, 0, 0.50) / 0.50
+
+    hbn = np.clip(-x - 0.00, 0, 0.25) / 0.25
+    hgn = np.clip(-x - 0.25, 0, 0.25) / 0.25
+    hrn = np.clip(-x - 0.50, 0, 0.50) / 0.50
+
+    r = hrp * (x >= 0) + hrn * (x < 0)
+    g = hgp * (x >= 0) + hgn * (x < 0)
+    b = hbp * (x >= 0) + hbn * (x < 0)
+
+    return np.concatenate([r, g, b], axis=-1)
+
+
+    return np.concatenate([(hrp + hrn)[..., None], (hgp + hgn)[..., None], (hbp + hbn)[..., None]], axis=2)
+
+
 # --------------------------------------
 # Visualizing data
 # --------------------------------------
 
 def visualize(x, colormap):
+
     N = len(x)
     assert (N <= 16)
-    try:
-        x = colormap(x / np.abs(x).max())
-    except ZeroDivisionError:
-        x = colormap(x)
+    if np.abs(x).max() == 0:
+        max = 1
+    else:
+        max = np.abs(x).max()
+
+    x = colormap(x / max)
+
+    # try:
+    #     x = colormap(x / np.abs(x).max())
+    # except ZeroDivisionError:
+    #     x = colormap(x)
 
     # Create a mosaic and upsample
     if len(x.shape) <= 3:

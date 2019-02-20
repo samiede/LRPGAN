@@ -22,6 +22,7 @@ from utils.utils import MidpointNormalize
 import subprocess
 import errno
 import matplotlib.pyplot as plt
+import numpy as np
 
 # add parameters
 parser = argparse.ArgumentParser()
@@ -70,10 +71,11 @@ if opt.fepochs:
 else:
     freezeEpochs = opt.epochs // 3
 
-try:
-    shutil.rmtree(outf)
-except OSError:
-    pass
+if not opt.cont:
+    try:
+        shutil.rmtree(outf)
+    except OSError:
+        pass
 try:
     os.makedirs(outf)
 except OSError as e:
@@ -122,7 +124,14 @@ else:
     pass
 
 assert dataset
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
+
+idx_train = np.arange(0, len(dataset) // 3 * 2 + 1, 1)
+idx_test = np.arange(len(dataset) // 3 * 2 + 1, len(dataset), 1)
+trainingset = torch.utils.data.dataset.Subset(dataset, idx_train)
+test_set = torch.utils.data.dataset.Subset(dataset, idx_test)
+
+
+dataloader = torch.utils.data.DataLoader(trainingset, batch_size=opt.batchSize,
                                          shuffle=True, num_workers=2)
 
 

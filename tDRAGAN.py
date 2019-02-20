@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import torch.utils.data
+import torch.utils.data.dataset
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import torchvision.utils as vutils
@@ -22,6 +23,7 @@ from utils.utils import MidpointNormalize
 import subprocess
 import errno
 import matplotlib.pyplot as plt
+import numpy as np
 
 # add parameters
 parser = argparse.ArgumentParser()
@@ -137,6 +139,7 @@ if opt.loadG:
 
 # if we want to discriminate stuff
 if opt.loadD:
+
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                              shuffle=False, num_workers=2)
 
@@ -156,6 +159,7 @@ if opt.loadD:
 
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_data = batch_data.to(gpu)
+        batch_data = torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
         batch_data.requires_grad = True
 
