@@ -18,16 +18,18 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import torch.distributions as distr
 import models._DRAGAN as dcgm
+from utils import utils
 from utils.utils import Logger
 from utils.utils import MidpointNormalize
 import subprocess
 import errno
 import matplotlib.pyplot as plt
 import numpy as np
+import utils.ciphar10 as ciphar10
 
 # add parameters
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', help='mnist | anime | custom', required=True, choices=['mnist', 'anime', 'custom'])
+parser.add_argument('--dataset', help='mnist | anime | custom', required=True, choices=['mnist', 'anime', 'custom', 'ciphar10'])
 parser.add_argument('--nz', type=int, default=100, help='size of the latent z vector')
 parser.add_argument('--outf', default='output', help='folder to output images and model checkpoints')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
@@ -79,7 +81,7 @@ if opt.dataset == 'mnist':
                                      transforms.Normalize((0.5,), (0.5,)),
                                  ]
                              ))
-    nc = 1
+    nc = 3
 
 elif opt.dataset == 'anime':
     root_dir = 'dataset/faces'
@@ -102,6 +104,16 @@ elif opt.dataset == 'custom':
         ]
     ))
     nc = 3
+elif opt.dataset == 'ciphar10':
+    out_dir = 'dataset/cifar10'
+    dataset = ciphar10.CIFAR10(root=out_dir, download=True, train=True,
+                            transform=transforms.Compose([
+                                transforms.Resize(opt.imageSize),
+                                transforms.ToTensor(),
+                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                            ]))
+    nc = 3
+
 
 
 else:
@@ -153,17 +165,31 @@ if opt.loadD:
     discriminator.load_state_dict(dict)
     discriminator.to(gpu)
 
+
+    def batchPrint(m):
+        classname = m.__class__.__name__
+        if classname.find('BatchNorm') != -1:
+            print('Batch norm mean weights: {}, mean bias: {}'.format(m.weight.mean(), m.bias.mean()))
+
+
+    discriminator.apply(batchPrint)
+
     if opt.eps_init:
         assert discriminator
         discriminator.apply(eps_init)
 
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_data = batch_data.to(gpu)
-        batch_data = torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
+        if batch_data.size(1) == 1:
+            batch_data = batch_data.repeat(1, 3, 1, 1)
+        # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
+        # batch_data = torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
+        # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
+        batch_data = torch.zeros(batch_data.size()).fill_(1)
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
         batch_data.requires_grad = True
 
-        if opt.num_images and n_batch > opt.num_images:
+        if opt.num_images and n_batch >= opt.num_images:
             break
 
         discriminator.passBatchNormParametersToConvolution()
@@ -176,6 +202,7 @@ if opt.loadD:
         test_result, test_prob = discriminator(batch_data)
         test_relevance = discriminator.relprop()
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+        # test_sensivity = torch.autograd.grad(test_result, batch_data)[0].pw(2)
 
         test_relevance = test_relevance[:, :, p:-p, p:-p]
         batch_data = batch_data[:, :, p:-p, p:-p]

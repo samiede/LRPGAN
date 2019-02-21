@@ -108,7 +108,7 @@ if opt.dataset == 'mnist':
                                      transforms.Normalize((0.5,), (0.5,)),
                                  ]
                              ))
-    nc = 1
+    nc = 3
 
 elif opt.dataset == 'anime':
     root_dir = 'dataset/faces'
@@ -262,6 +262,8 @@ print('Created Logger')
 
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+        if batch_data.size(1) == 1:
+            batch_data = batch_data.repeat(1, 3, 1, 1)
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
 
@@ -298,6 +300,7 @@ for epoch in range(opt.epochs):
         d_error_total = d_err_real.item() + d_err_fake.item()
 
         # gradient penalty
+
         if opt.gp:
             grad_alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
             x_hat = torch.tensor(grad_alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),

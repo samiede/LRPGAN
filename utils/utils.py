@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 import matplotlib
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import colorednoise as cn
 
 if torch.cuda.is_available():
     plt.switch_backend('agg')
@@ -307,7 +308,7 @@ class Logger:
         fig.set_size_inches(32, num_plots * 32)
         index = 0
         for n in range(0, num_plots):
-            image = vutils.make_grid(images[index], normalize=True, scale_each=True, pad_value=0)
+            image = vutils.make_grid(images[index], normalize=True, scale_each=True, pad_value=0, range=(-1, 1))
             image = np.moveaxis(image.cpu().detach().numpy(), 0, -1)
             if num_plots > 1:
                 ax0 = axarr[n, 0]
@@ -410,11 +411,9 @@ def graymap(x):
 
 
 def gregoire_black_firered(R):
-
     # R = R / np.max(np.abs(R))
     x = R
     x = x[..., np.newaxis]
-
 
     hrp = np.clip(x - 0.00, 0, 0.25) / 0.25
     hgp = np.clip(x - 0.25, 0, 0.25) / 0.25
@@ -430,7 +429,6 @@ def gregoire_black_firered(R):
 
     return np.concatenate([r, g, b], axis=-1)
 
-
     return np.concatenate([(hrp + hrn)[..., None], (hgp + hgn)[..., None], (hbp + hbn)[..., None]], axis=2)
 
 
@@ -439,7 +437,6 @@ def gregoire_black_firered(R):
 # --------------------------------------
 
 def visualize(x, colormap):
-
     N = len(x)
     assert (N <= 16)
     if np.abs(x).max() == 0:
@@ -465,6 +462,14 @@ def visualize(x, colormap):
     # x = x.transpose([0, 2, 1, 3, 4]).reshape([1 * 32, N * 32, 3])
     # x = np.kron(x, np.ones([2, 2, 1]))
     # PIL.Image.fromarray((x * 255).astype('byte'), 'RGB').save('./data/images/VGAN/MNIST/' + name)
+
+
+def pink_noise(batch_size, channels, width, height):
+    samples = batch_size * channels * width * height
+    pink_noise = cn.powerlaw_psd_gaussian(1, batch_size * channels * width * height)
+    pink_noise = torch.from_numpy(pink_noise)
+    pink_noise = pink_noise.reshape(batch_size, channels, width, height).float()
+    return pink_noise
 
 
 # set the colormap and centre the colorbar
