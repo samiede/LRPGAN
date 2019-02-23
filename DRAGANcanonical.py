@@ -69,7 +69,6 @@ print(opt)
 text_file = open("{}/run_parameters.txt".format(outf), "w+")
 text_file.write("Run parameters: %s" % opt)
 text_file.close()
-exit()
 
 if opt.fepochs:
     freezeEpochs = int(opt.fepochs)
