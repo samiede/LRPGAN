@@ -100,13 +100,12 @@ elif opt.dataset == 'custom':
     dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
         [
             transforms.Resize((opt.imageSize, opt.imageSize)),
-            transforms.Grayscale(num_output_channels=1),
-
+            # transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
     ))
-    nc = 1
+    nc = 3
 elif opt.dataset == 'ciphar10':
     out_dir = 'dataset/cifar10'
     dataset = ciphar10.CIFAR10(root=out_dir, download=True, train=True,
@@ -186,11 +185,14 @@ if opt.loadD and not opt.external:
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_data = batch_data.to(gpu)
 
+        # Perturbing input
+        # ##############################################################################################
         # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = torch.randn(opt.batchSize, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
+        # batch_data = torch.zeros(batch_data.size()).fill_(1)
+        # ##############################################################################################
 
-        batch_data = torch.zeros(batch_data.size()).fill_(1)
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
         batch_data.requires_grad = True
 
@@ -204,6 +206,7 @@ if opt.loadD and not opt.external:
         if (opt.ngpu > 1):
             discriminator.setngpu(1)
 
+        print('Discriminating image no. {}'.format(n_batch))
         test_result, test_prob = discriminator(batch_data)
         test_relevance = discriminator.relprop()
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
