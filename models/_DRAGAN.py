@@ -598,7 +598,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
                 layer = nnrd.Layer(
                     layer[0],
                     layer[2],
-                    layer[3]
+                    # layer[3]
                 )
                 layers.append(layer)
             else:
