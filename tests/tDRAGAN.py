@@ -100,21 +100,22 @@ elif opt.dataset == 'custom':
     dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
         [
             transforms.Resize((opt.imageSize, opt.imageSize)),
-            # transforms.Grayscale(num_output_channels=1),
+            transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
     ))
-    nc = 3
+    nc = 1
 elif opt.dataset == 'ciphar10':
     out_dir = 'dataset/cifar10'
     dataset = ciphar10.CIFAR10(root=out_dir, download=True, train=True,
                             transform=transforms.Compose([
                                 transforms.Resize(opt.imageSize),
+                                transforms.Grayscale(num_output_channels=1),
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ]))
-    nc = 3
+    nc = 1
 
 
 
@@ -176,7 +177,7 @@ if opt.loadD and not opt.external:
         if classname.find('BatchNorm') != -1:
             print('Batch norm mean weights: {}, mean bias: {}'.format(m.weight.mean(), m.bias.mean()))
 
-    discriminator.apply(batchPrint)
+    # discriminator.apply(batchPrint)
 
     if opt.eps_init:
         assert discriminator
@@ -191,6 +192,7 @@ if opt.loadD and not opt.external:
         # batch_data = torch.randn(opt.batchSize, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
         # batch_data = torch.zeros(batch_data.size()).fill_(1)
+        # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[10, 30], [50, 40]], 1))
         # ##############################################################################################
 
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
@@ -241,7 +243,7 @@ if opt.loadD and opt.external:
         # batch_data = torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
         # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[20, 20], [50, 50]], 'uniform'))
-        batch_data = torch.zeros(batch_data.size()).fill_(-1)
+        # batch_data = torch.zeros(batch_data.size()).fill_(-1)
         # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
 
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)

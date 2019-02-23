@@ -66,9 +66,6 @@ p = 2
 lambda_ = float(opt.d_lambda)
 
 print(opt)
-text_file = open("{}/run_parameters.txt".format(outf), "w+")
-text_file.write("Run parameters: %s" % opt)
-text_file.close()
 
 if opt.fepochs:
     freezeEpochs = int(opt.fepochs)
@@ -91,6 +88,12 @@ try:
     os.makedirs(checkpointdir)
 except OSError:
     pass
+
+
+text_file = open("{}/run_parameters.txt".format(outf), "w+")
+text_file.write("Run parameters: %s" % opt)
+text_file.close()
+
 
 # CUDA everything
 cudnn.benchmark = True

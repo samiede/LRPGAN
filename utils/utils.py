@@ -226,7 +226,7 @@ class Logger:
     @staticmethod
     def _make_dir(directory):
         try:
-            os.makedirs(directory)
+            os.makedirs(directory, exist_ok=True)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
@@ -238,7 +238,7 @@ class Logger:
         except OSError:
             pass
         try:
-            os.makedirs(directory)
+            os.makedirs(directory, exist_ok=True)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
@@ -331,7 +331,7 @@ class Logger:
             ttl = ax0.title
             ttl.set_position([.5, 1.05])
 
-            image = vutils.make_grid(images[index + 1], scale_each=True, pad_value=0)
+            image = vutils.make_grid(images[index + 1], scale_each=True, pad_value=0, range=(-1, 1))
             data = np.moveaxis(image.cpu().detach().numpy(), 0, -1)
             ax1.imshow(data)
             ttl = ax1.title
