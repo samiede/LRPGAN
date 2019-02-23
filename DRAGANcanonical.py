@@ -51,6 +51,7 @@ parser.add_argument('--cuda', help='number of GPU', type=int, default=0)
 parser.add_argument('--resnet', help='Use resnet', action='store_true')
 parser.add_argument('--gp', help='Use gradient penalty', action='store_true')
 parser.add_argument('--cont', help='Continue training -> Does not delete dir', action='store_true')
+parser.add_argument('--split', help='Split dataset in training and test set', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -108,7 +109,7 @@ if opt.dataset == 'mnist':
                                      transforms.Normalize((0.5,), (0.5,)),
                                  ]
                              ))
-    nc = 3
+    nc = 1
 
 elif opt.dataset == 'anime':
     root_dir = 'dataset/faces'
@@ -125,13 +126,15 @@ else:
 
 assert dataset
 
-idx_train = np.arange(0, len(dataset) // 3 * 2 + 1, 1)
-idx_test = np.arange(len(dataset) // 3 * 2 + 1, len(dataset), 1)
-trainingset = torch.utils.data.dataset.Subset(dataset, idx_train)
-test_set = torch.utils.data.dataset.Subset(dataset, idx_test)
+if opt.split:
+    idx_train = np.arange(0, len(dataset) // 3 * 2 + 1, 1)
+    idx_test = np.arange(len(dataset) // 3 * 2 + 1, len(dataset), 1)
+    trainingset = torch.utils.data.dataset.Subset(dataset, idx_train)
+    test_set = torch.utils.data.dataset.Subset(dataset, idx_test)
+    dataset = trainingset
 
 
-dataloader = torch.utils.data.DataLoader(trainingset, batch_size=opt.batchSize,
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                          shuffle=True, num_workers=2)
 
 
@@ -262,8 +265,6 @@ print('Created Logger')
 
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
-        if batch_data.size(1) == 1:
-            batch_data = batch_data.repeat(1, 3, 1, 1)
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
 
@@ -279,7 +280,8 @@ for epoch in range(opt.epochs):
         real_test = real_data[0].clone().unsqueeze(0)
         # Add noise to input
         real_data_noise = added_gaussian_chi(real_data, add_noise_var)
-        prediction_real = discriminator(real_data_noise)
+        # prediction_real = discriminator(real_data_noise)
+        prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
         d_real = prediction_real.mean().item()
@@ -292,7 +294,8 @@ for epoch in range(opt.epochs):
 
         # Add noise to fake data
         fake_noise = added_gaussian_chi(fake, add_noise_var)
-        prediction_fake = discriminator(fake_noise.detach())
+        # prediction_fake = discriminator(fake_noise.detach())
+        prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
         d_err_fake.backward()
         d_fake_1 = prediction_fake.mean().item()
@@ -387,6 +390,7 @@ for epoch in range(opt.epochs):
                          'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
+
 
             ###### Using matplotlib Color Map ######
             # minrel = test_relevance_c.min()

@@ -264,7 +264,7 @@ class Logger:
             else:
                 name = n
 
-            print('Saving image {}'.format(n))
+            print('Saving image {}/{}'.format(n, images.size(0)))
             fig.savefig('{}/{}.png'.format(out_dir_png, name), bbox_inches='tight', pad_inches=0, transparent=True, dpi=100)
             fig.savefig('{}/{}.pdf'.format(out_dir_pdf, name), bbox_inches='tight', pad_inches=0, transparent=True, dpi=100)
             plt.close()
@@ -290,6 +290,11 @@ class Logger:
 
         # concat images and relevance in comb pattern
         relevance = relevance.permute(0, 3, 1, 2)
+
+        # concat images
+        if images.size(1) == 1:
+            images = images.repeat(1, 3, 1, 1)
+
         images_comb = torch.Tensor()
         for pair in zip(images, relevance):
             comb = torch.cat((pair[0].unsqueeze(0), pair[1].unsqueeze(0)))
@@ -445,7 +450,6 @@ def visualize(x, colormap):
         max = np.abs(x).max()
 
     x = colormap(x / max)
-
     # try:
     #     x = colormap(x / np.abs(x).max())
     # except ZeroDivisionError:
@@ -470,6 +474,25 @@ def pink_noise(batch_size, channels, width, height):
     pink_noise = torch.from_numpy(pink_noise)
     pink_noise = pink_noise.reshape(batch_size, channels, width, height).float()
     return pink_noise
+
+
+def drawBoxes(batch_size, channels, imageSize, background_fill=-1, *argv):
+
+    data = torch.zeros([batch_size, channels, imageSize, imageSize]).fill_(background_fill)
+    for arg in argv:
+        if type(arg[1]) == int or type(arg[1]) == float:
+            fill = torch.Tensor(arg[0][1][0] - arg[0][0][0], arg[0][1][1] - arg[0][0][1]).fill_(arg[1])
+        elif type(arg[1]) == str:
+            if arg[1] == 'gaussian':
+                fill = torch.randn(batch_size, channels, arg[0][1][0] - arg[0][0][0], arg[0][1][1] - arg[0][0][1])
+            elif arg[1] == 'uniform':
+                fill = torch.ones(batch_size, channels, arg[0][1][0] - arg[0][0][0], arg[0][1][1] - arg[0][0][1]).uniform_(-1, 1)
+            elif arg[1] == 'pink':
+                fill = pink_noise(batch_size, channels, arg[0][1][0] - arg[0][0][0], arg[0][1][1] - arg[0][0][1])
+        else: break
+        data[:, :, arg[0][0][0]:arg[0][1][0], arg[0][0][1]:arg[0][1][1]] = fill
+    return data
+
 
 
 # set the colormap and centre the colorbar

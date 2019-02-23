@@ -41,6 +41,7 @@ group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('--loadG', default=None, help='path to generator')
 group.add_argument('--loadD', default=None, help='path to discriminator')
 parser.add_argument('--alpha', default=1, type=int)
+parser.add_argument('--external', help='load external network', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -81,7 +82,7 @@ if opt.dataset == 'mnist':
                                      transforms.Normalize((0.5,), (0.5,)),
                                  ]
                              ))
-    nc = 3
+    nc = 1
 
 elif opt.dataset == 'anime':
     root_dir = 'dataset/faces'
@@ -99,11 +100,13 @@ elif opt.dataset == 'custom':
     dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
         [
             transforms.Resize((opt.imageSize, opt.imageSize)),
+            transforms.Grayscale(num_output_channels=1),
+
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
     ))
-    nc = 3
+    nc = 1
 elif opt.dataset == 'ciphar10':
     out_dir = 'dataset/cifar10'
     dataset = ciphar10.CIFAR10(root=out_dir, download=True, train=True,
@@ -130,8 +133,9 @@ def eps_init(m):
 
 
 # if we want to generate stuff
-if opt.loadG:
+if opt.loadG and not opt.external:
     generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=ngpu)
+    # generator = dcgm.Generator(nc, ngf=128, ngpu=ngpu)
     dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
         del dict['net.1.num_batches_tracked']
@@ -150,18 +154,20 @@ if opt.loadG:
     logger.save_image_batch(images, num=None)
 
 # if we want to discriminate stuff
-if opt.loadD:
+if opt.loadD and not opt.external:
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                              shuffle=False, num_workers=2)
 
     discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+    # TODO for standard DCGAN
     if torch.__version__ == '0.4.0':
         del dict['net.1.bn2.num_batches_tracked']
         del dict['net.2.bn3.num_batches_tracked']
         del dict['net.3.bn4.num_batches_tracked']
         del dict['net.4.bn5.num_batches_tracked']
+
     discriminator.load_state_dict(dict)
     discriminator.to(gpu)
 
@@ -171,7 +177,6 @@ if opt.loadD:
         if classname.find('BatchNorm') != -1:
             print('Batch norm mean weights: {}, mean bias: {}'.format(m.weight.mean(), m.bias.mean()))
 
-
     discriminator.apply(batchPrint)
 
     if opt.eps_init:
@@ -180,11 +185,11 @@ if opt.loadD:
 
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_data = batch_data.to(gpu)
-        if batch_data.size(1) == 1:
-            batch_data = batch_data.repeat(1, 3, 1, 1)
+
         # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
-        # batch_data = torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
+        # batch_data = torch.randn(opt.batchSize, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
+
         batch_data = torch.zeros(batch_data.size()).fill_(1)
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
         batch_data.requires_grad = True
@@ -209,3 +214,69 @@ if opt.loadD:
 
         logger.save_heatmap_batch(images=batch_data, relevance=test_relevance, probability=test_prob, relu_result=test_result,
                                   num=n_batch)
+
+if opt.loadD and opt.external:
+
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
+                                             shuffle=False, num_workers=2)
+
+    discriminator = dcgm.Discriminator(nc=1, ndf=64, ngpu=ngpu)
+    dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+    if torch.__version__ == '0.4.0':
+        # del dict['main.1.num_batches_tracked']
+        del dict['main.3.num_batches_tracked']
+        del dict['main.6.num_batches_tracked']
+        del dict['main.9.num_batches_tracked']
+    discriminator.load_state_dict(dict)
+    discriminator.to(gpu)
+
+    for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+        batch_data = batch_data.to(gpu)
+        # if batch_data.size(1) == 1:
+        #     batch_data = batch_data.repeat(1, 3, 1, 1)
+        # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
+        # batch_data = torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
+        # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
+        # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[20, 20], [50, 50]], 'uniform'))
+        batch_data = torch.zeros(batch_data.size()).fill_(-1)
+        # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
+
+        batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
+        batch_data.requires_grad = True
+
+        if opt.num_images and n_batch >= opt.num_images:
+            break
+        discriminator.eval()
+        test_result = discriminator(batch_data)
+        print(test_result.mean().item())
+
+        batch_data = batch_data[:, :, p:-p, p:-p]
+
+        if batch_data.size(1) == 1:
+            batch_data = batch_data.repeat(1, 3, 1, 1)
+
+        logger.save_heatmap_batch(images=batch_data, relevance=torch.sum(batch_data, 1, keepdim=True).detach(), probability=test_result, relu_result=test_result,
+                                  num=n_batch)
+
+
+if opt.loadG and opt.external:
+
+    torch.manual_seed(1234)
+    np.random.seed(1234)
+
+    generator = dcgm.Generator(nc, ngf=64, ngpu=ngpu)
+    dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+    if torch.__version__ == '0.4.0':
+        del dict['main.1.num_batches_tracked']
+        del dict['main.4.num_batches_tracked']
+        del dict['main.7.num_batches_tracked']
+        del dict['main.10.num_batches_tracked']
+    generator.load_state_dict(dict)
+    generator.to(gpu)
+    generator.eval()
+
+    noise = torch.randn(opt.num_images, nz, 1, 1, device=gpu)
+
+    images = generator(noise)
+
+    logger.save_image_batch(images, num=None)
