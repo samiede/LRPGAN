@@ -372,11 +372,11 @@ class GeneratorNetLessCheckerboard(nn.Module):
         nz = 100
         self.net = nn.Sequential(
 
-            nn.ConvTranspose2d(nz, ngf * 16, 4, 1, 0, bias=False),
+            nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(ngf * 16),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.ConvTranspose2d(ngf * 16, ngf * 8, 3, 1, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 8, ngf * 8, 3, 1, 1, bias=False),
             nn.BatchNorm2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
 
@@ -504,7 +504,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
                                       alpha=alpha)),
                 ('bn2', nnrd.BatchNorm2d(ndf)),
                 ('relu2', nnrd.ReLu()),
-                # ('dropou2', nnrd.Dropout(0.3)),
+                ('dropou2', nnrd.Dropout(0.3)),
             ])
             ),
             # state size. (ndf) x 32 x 32
@@ -513,7 +513,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
                                                padding=1, alpha=alpha)),
                 ('bn3', nnrd.BatchNorm2d(ndf * 2)),
                 ('relu3', nnrd.ReLu()),
-                # ('dropout3', nnrd.Dropout(0.3)),
+                ('dropout3', nnrd.Dropout(0.3)),
             ])
 
             ),
@@ -524,7 +524,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
                                       padding=1, alpha=alpha)),
                 ('bn4', nnrd.BatchNorm2d(ndf * 4)),
                 ('relu4', nnrd.ReLu()),
-                # ('dropout4', nnrd.Dropout(0.3)),
+                ('dropout4', nnrd.Dropout(0.3)),
             ])
             ),  # state size. (ndf*2) x 16 x 16
             # state size. (ndf*4) x 8 x 8
@@ -534,7 +534,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
                                          padding=1, epsilon=0.01)),
                 ('bn5', nnrd.BatchNorm2d(ndf * 8)),
                 ('relu5', nnrd.ReLu()),
-                # ('dropout5', nnrd.Dropout(0.3)),
+                ('dropout5', nnrd.Dropout(0.3)),
             ])
             ),
         )
@@ -598,7 +598,7 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
                 layer = nnrd.Layer(
                     layer[0],
                     layer[2],
-                    # layer[3]
+                    layer[3]
                 )
                 layers.append(layer)
             else:
