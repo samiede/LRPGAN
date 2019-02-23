@@ -247,7 +247,7 @@ if opt.loadD and opt.external:
         batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
         batch_data.requires_grad = True
 
-        if opt.num_images and n_batch >= opt.num_images:
+        if opt.num_images  and n_batch >= opt.num_images:
             break
         discriminator.eval()
         test_result = discriminator(batch_data)

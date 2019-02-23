@@ -255,7 +255,7 @@ class Logger:
             ax = plt.axes()
             ax.xaxis.set_visible(False)
             ax.yaxis.set_visible(False)
-            image = vutils.make_grid(images[n], normalize=True, scale_each=True, padding=0, pad_value=0)
+            image = vutils.make_grid(images[n], normalize=True, scale_each=True, padding=0, pad_value=0, range=(-1, 1))
             plt.imshow(np.moveaxis(image.cpu().detach().numpy(), 0, -1), aspect='auto')
             plt.axis('off')
 
@@ -269,8 +269,9 @@ class Logger:
             fig.savefig('{}/{}.pdf'.format(out_dir_pdf, name), bbox_inches='tight', pad_inches=0, transparent=True, dpi=100)
             plt.close()
 
-        vutils.save_image(images, '{}/{}.png'.format(out_dir_png, 'all_samples'), nrow=int(np.sqrt(images.size(0))), pad_value=1, normalize=True,
-                          scale_each=True)
+        if images.size(0) > 1:
+            vutils.save_image(images, '{}/{}.png'.format(out_dir_png, 'all_samples'), nrow=int(np.sqrt(images.size(0))), pad_value=1, normalize=True,
+                              scale_each=True)
 
     def save_heatmap_batch(self, images, relevance, probability, relu_result, num):
 

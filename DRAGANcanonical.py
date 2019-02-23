@@ -52,6 +52,7 @@ parser.add_argument('--resnet', help='Use resnet', action='store_true')
 parser.add_argument('--gp', help='Use gradient penalty', action='store_true')
 parser.add_argument('--cont', help='Continue training -> Does not delete dir', action='store_true')
 parser.add_argument('--split', help='Split dataset in training and test set', action='store_true')
+parser.add_argument('--comment', help='Comment to add to run parameter file', default='', required=True)
 
 opt = parser.parse_args()
 outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
@@ -65,6 +66,9 @@ p = 2
 lambda_ = float(opt.d_lambda)
 
 print(opt)
+text_file = open("{}/run parameters.txt".format(outf), "w+")
+text_file.write("Run parameters: %s" % opt)
+text_file.close()
 
 if opt.fepochs:
     freezeEpochs = int(opt.fepochs)
