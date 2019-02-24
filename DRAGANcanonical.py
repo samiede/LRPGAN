@@ -49,7 +49,6 @@ parser.add_argument('--lr_d', help='Learning rate for optimizer, 0.00005 for lrp
 parser.add_argument('--eps_init', help='Change epsilon for eps rule after loading state dict', type=float, default=None)
 parser.add_argument('--d_lambda', help='Factor for gradient penalty, default=10', type=float, default=10)
 parser.add_argument('--cuda', help='number of GPU', type=int, default=0)
-parser.add_argument('--resnet', help='Use resnet', action='store_true')
 parser.add_argument('--gp', help='Use gradient penalty', action='store_true')
 parser.add_argument('--cont', help='Continue training -> Does not delete dir', action='store_true')
 parser.add_argument('--split', help='Split dataset in training and test set', action='store_true')
@@ -90,11 +89,9 @@ try:
 except OSError:
     pass
 
-
 text_file = open("{}/run_parameters.txt".format(outf), "w+")
 text_file.write("Run parameters: %s" % opt)
 text_file.close()
-
 
 # CUDA everything
 cudnn.benchmark = True
@@ -114,7 +111,7 @@ if opt.dataset == 'mnist':
                                  [
                                      transforms.Resize(opt.imageSize),
                                      transforms.ToTensor(),
-                                     # transforms.Normalize((0.5,), (0.5,)),
+                                     transforms.Normalize((0.5,), (0.5,)),
                                  ]
                              ))
     nc = 1
@@ -140,7 +137,6 @@ if opt.split:
     trainingset = torch.utils.data.dataset.Subset(dataset, idx_train)
     test_set = torch.utils.data.dataset.Subset(dataset, idx_test)
     dataset = trainingset
-
 
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                          shuffle=True, num_workers=2)
@@ -209,11 +205,7 @@ def weights_init(m):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-if not opt.resnet:
-    # generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
-    generator = dcgm.LRPGeneratorNet(nc, ngf, ngpu).to(gpu)
-else:
-    generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
+generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -226,12 +218,7 @@ if opt.loadG != '':
     generator.load_state_dict(dict)
     generator.to(gpu)
 
-
-if not opt.resnet:
-    # discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
-    discriminator = dcgm.SmoothingLayerDiscriminator(nc, ndf, alpha, ngpu).to(gpu)
-else:
-    discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -244,7 +231,7 @@ if opt.loadD != '':
     discriminator.to(gpu)
 
 # Set all weights in smoothing layer to 1
-discriminator.net[0][0].weight.fill_(1)
+# discriminator.net[0][0].weight.fill_(1)
 
 
 if opt.eps_init:
@@ -258,8 +245,7 @@ if opt.eps_init:
 
 # init optimizer + loss
 
-# d_optimizer = optim.Adam(discriminator.parameters(), lr=float(opt.lr_d), betas=(0.5, 0.999))
-d_optimizer = optim.Adam(filter(lambda p: p.requires_grad, discriminator.parameters()), lr=float(opt.lr_d), betas=(0.5, 0.999))
+d_optimizer = optim.Adam(discriminator.parameters(), lr=float(opt.lr_d), betas=(0.5, 0.999))
 g_optimizer = optim.Adam(generator.parameters(), lr=float(opt.lr_g), betas=(0.5, 0.999))
 
 loss = nn.BCELoss()
@@ -404,7 +390,6 @@ for epoch in range(opt.epochs):
                          'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
-
 
             ###### Using matplotlib Color Map ######
             # minrel = test_relevance_c.min()

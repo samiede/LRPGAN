@@ -527,31 +527,31 @@ class GeneratorNetLessCheckerboard(nn.Module):
         self.ngpu = ngpu
         nz = 100
         self.net = nn.Sequential(
-
-            nn.ConvTranspose2d(nz, ngf * 16, 4, 1, 0, bias=False),
+            nn.ConvTranspose2d(nz, ngf * 16, 4, 1, 0, bias=True),
             nn.BatchNorm2d(ngf * 16),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.ConvTranspose2d(ngf * 16, ngf * 8, 3, 1, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 16, ngf * 8, 3, 1, 1, bias=True),
             nn.BatchNorm2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
 
             # state size. (ngf*8) x 4 x 4
-            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=True),
             nn.BatchNorm2d(ngf * 4),
             nn.LeakyReLU(0.2, inplace=True),
 
             # state size. (ngf*4) x 8 x 8
-            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=True),
             nn.BatchNorm2d(ngf * 2),
             nn.LeakyReLU(0.2, inplace=True),
 
             # state size. (ngf*2) x 16 x 16
-            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=True),
             nn.BatchNorm2d(ngf),
             nn.LeakyReLU(0.2, inplace=True),
+
             # state size. (ngf) x 32 x 32
-            nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=True),
             nn.Tanh()
             # state size. (nc) x 64 x 64
         )
@@ -578,7 +578,7 @@ class DiscriminatorNetLessCheckerboardAlternate(nn.Module):
                 nnrd.ReLu(),
             ),
             nnrd.Layer(
-                nnrd.NextConvolution(in_channels=ndf, out_channels=ndf, kernel_size=4, name='0', stride=2, padding=1,
+                nnrd.NextConvolution(in_channels=ndf, out_channels=int(ndf * 1.5), kernel_size=4, name='0', stride=2, padding=1,
                                      alpha=alpha),
                 nnrd.BatchNorm2d(ndf),
                 nnrd.ReLu(),
@@ -586,7 +586,7 @@ class DiscriminatorNetLessCheckerboardAlternate(nn.Module):
             ),
             # state size. (ndf) x 32 x 32
             nnrd.Layer(
-                nnrd.NextConvolution(in_channels=ndf, out_channels=ndf * 2, kernel_size=4, name='1', stride=2,
+                nnrd.NextConvolution(in_channels=int(ndf * 1.5), out_channels=ndf * 2, kernel_size=4, name='1', stride=2,
                                      padding=1, alpha=alpha),
                 nnrd.BatchNorm2d(ndf * 2),
                 nnrd.ReLu(),
