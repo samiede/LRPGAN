@@ -21,7 +21,7 @@ import PIL, PIL.Image
     TensorBoard Data will be stored in './runs' path
 '''
 
-lowest = -1.0
+lowest = 0
 highest = 1.0
 
 
@@ -255,7 +255,7 @@ class Logger:
             ax = plt.axes()
             ax.xaxis.set_visible(False)
             ax.yaxis.set_visible(False)
-            image = vutils.make_grid(images[n], normalize=True, scale_each=True, padding=0, pad_value=0, range=(-1, 1))
+            image = vutils.make_grid(images[n], normalize=True, scale_each=True, padding=0, pad_value=0, range=(lowest, highest))
             plt.imshow(np.moveaxis(image.cpu().detach().numpy(), 0, -1), aspect='auto')
             plt.axis('off')
 
@@ -314,7 +314,7 @@ class Logger:
         fig.set_size_inches(32, num_plots * 32)
         index = 0
         for n in range(0, num_plots):
-            image = vutils.make_grid(images[index], normalize=True, scale_each=True, pad_value=0, range=(-1, 1))
+            image = vutils.make_grid(images[index], normalize=True, scale_each=True, pad_value=0, range=(lowest, highest))
             image = np.moveaxis(image.cpu().detach().numpy(), 0, -1)
             if num_plots > 1:
                 ax0 = axarr[n, 0]
@@ -331,7 +331,7 @@ class Logger:
             ttl = ax0.title
             ttl.set_position([.5, 1.05])
 
-            image = vutils.make_grid(images[index + 1], scale_each=True, pad_value=0, range=(-1, 1))
+            image = vutils.make_grid(images[index + 1], scale_each=True, pad_value=0, range=(lowest, highest))
             data = np.moveaxis(image.cpu().detach().numpy(), 0, -1)
             ax1.imshow(data)
             ttl = ax1.title
