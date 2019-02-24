@@ -779,7 +779,7 @@ class SmoothingLayerDiscriminator(nn.Module):
 
         self.net = nnrd.RelevanceNetAlternate(
             nnrd.Layer(OrderedDict([
-                ('conv1', nnrd.FirstConvolution(in_channels=nc, out_channels=nc, kernel_size=5, stride=1, padding=0)),
+                ('conv1', nnrd.FirstConvolution(in_channels=nc, out_channels=nc, kernel_size=3, stride=1, padding=0)),
                 ('relu1', nnrd.ReLu()),
             ])
             ),

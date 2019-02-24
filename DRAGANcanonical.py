@@ -17,6 +17,7 @@ import torchvision.transforms as transforms
 import torchvision.utils as vutils
 import torch.distributions as distr
 import models._DRAGAN as dcgm
+import utils.utils as utils
 from utils.utils import Logger
 from utils.utils import MidpointNormalize
 import subprocess
@@ -62,7 +63,7 @@ ngf = int(opt.ngf)
 ndf = int(opt.ndf)
 nz = int(opt.nz)
 alpha = opt.alpha
-p = 2
+p = 1
 lambda_ = float(opt.d_lambda)
 
 print(opt)
@@ -287,7 +288,7 @@ for epoch in range(opt.epochs):
         # train with real
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
-        real_data = F.pad(real_data, (p, p, p, p), value=-1)
+        real_data = F.pad(real_data, (p, p, p, p), value=utils.lowest)
         label_real = discriminator_target(batch_size).to(gpu)
         # save input without noise for relevance comparison
         real_test = real_data[0].clone().unsqueeze(0)
@@ -302,7 +303,7 @@ for epoch in range(opt.epochs):
         # train with fake
         noise = torch.randn(batch_size, nz, 1, 1, device=gpu)
         fake = generator(noise)
-        fake = F.pad(fake, (p, p, p, p), value=-1)
+        fake = F.pad(fake, (p, p, p, p), value=utils.lowest)
         label_fake = generator_target(batch_size).to(gpu)
 
         # Add noise to fake data
