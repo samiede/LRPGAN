@@ -209,7 +209,8 @@ def weights_init(m):
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
 if not opt.resnet:
-    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
+    # generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
+    generator = dcgm.LRPGeneratorNet(nc, ngf, ngpu).to(gpu)
 else:
     generator = dcgm.ResnetGenerator(nc, nz, ngpu).to(gpu)
 generator.apply(weights_init)
@@ -226,7 +227,8 @@ if opt.loadG != '':
 
 
 if not opt.resnet:
-    discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, ndf=ndf, alpha=alpha, ngpu=ngpu).to(gpu)
+    # discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
+    discriminator = dcgm.LRPDiscriminatorNet(nc, ndf, alpha, ngpu).to(gpu)
 else:
     discriminator = dcgm.NonResnetDiscriminator(nc=nc, alpha=alpha, eps=1e-9, ngpu=ngpu).to(gpu)
 discriminator.apply(weights_init)
