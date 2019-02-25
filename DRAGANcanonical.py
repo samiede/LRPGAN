@@ -132,8 +132,8 @@ else:
 assert dataset
 
 if opt.split:
-    idx_train = np.arange(0, len(dataset) // 3 * 2 + 1, 1)
-    idx_test = np.arange(len(dataset) // 3 * 2 + 1, len(dataset), 1)
+    idx_train = np.arange(0, int(len(dataset) * 0.8) + 1, 1)
+    idx_test = np.arange(int(len(dataset) * 0.8) + 1, len(dataset), 1)
     trainingset = torch.utils.data.dataset.Subset(dataset, idx_train)
     test_set = torch.utils.data.dataset.Subset(dataset, idx_test)
     dataset = trainingset
