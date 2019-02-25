@@ -78,7 +78,6 @@ if opt.dataset == 'mnist':
                              transform=transforms.Compose(
                                  [
                                      transforms.Resize(opt.imageSize),
-                                     # transforms.Grayscale(num_output_channels=3),
                                      transforms.ToTensor(),
                                      transforms.Normalize((0.5,), (0.5,)),
                                  ]
@@ -101,7 +100,6 @@ elif opt.dataset == 'custom':
     dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
         [
             transforms.Resize((opt.imageSize, opt.imageSize)),
-            transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
@@ -121,7 +119,7 @@ else:
     pass
 
 
-nc = 1
+nc = 3
 
 assert dataset
 assert nc
@@ -135,8 +133,8 @@ def eps_init(m):
 
 # if we want to generate stuff
 if opt.loadG and not opt.external:
-    generator = dcgm.LRPGeneratorNet(nc, ngf=128, ngpu=ngpu)
-    # generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=64, ngpu=ngpu)
+    # generator = dcgm.LRPGeneratorNet(nc, ngf=64, ngpu=ngpu)
+    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=ngpu)
     # generator = dcgm.Generator(nc, ngf=128, ngpu=ngpu)
     dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
@@ -144,7 +142,7 @@ if opt.loadG and not opt.external:
         del dict['net.4.num_batches_tracked']
         del dict['net.7.num_batches_tracked']
         del dict['net.10.num_batches_tracked']
-        # del dict['net.13.num_batches_tracked']
+        del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
     generator.to(gpu)
     generator.eval()
@@ -159,7 +157,7 @@ if opt.loadG and not opt.external:
 if opt.loadD and not opt.external:
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
-                                             shuffle=True, num_workers=2)
+                                             shuffle=False, num_workers=2)
 
     # discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
@@ -179,7 +177,12 @@ if opt.loadD and not opt.external:
         if classname.find('BatchNorm') != -1:
             print('Batch norm mean weights: {}, mean bias: {}'.format(m.weight.mean(), m.bias.mean()))
 
-    # discriminator.apply(batchPrint)
+    def biasPrint(m):
+        classname = m.__class__.__name__
+        if classname.find('Conv') != -1 and m.bias is not None:
+            print('{} mean weights: {}, mean bias: {}'.format(m.name, m.weight.mean(), m.bias.mean()))
+
+    discriminator.apply(biasPrint)
 
     if opt.eps_init:
         assert discriminator
@@ -193,7 +196,8 @@ if opt.loadD and not opt.external:
         # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = torch.randn(opt.batchSize, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
-        # batch_data = torch.zeros(batch_data.size()).fill_(1)
+        # batch_data = torch.zeros(batch_data.size()).fill_(0)
+        # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[20, 20], [50, 50]], 'pink'))
         # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[10, 30], [50, 40]], 1))
         # ##############################################################################################
 
@@ -210,7 +214,10 @@ if opt.loadD and not opt.external:
         if (opt.ngpu > 1):
             discriminator.setngpu(1)
 
-        flip = True
+
+        if batch_data.size(1) == 1:
+            batch_data = batch_data.repeat(1, 3, 1, 1)
+        flip = False
         test_result, test_prob = discriminator(batch_data, flip=flip)
         print('Discriminating image no. {}: {}'.format(n_batch, test_prob.item()))
 
@@ -251,7 +258,7 @@ if opt.loadD and opt.external:
         # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
-        # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[20, 20], [50, 50]], 'uniform'))
+        batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[20, 20], [50, 50]], 'uniform'))
         # batch_data = torch.zeros(batch_data.size()).fill_(-1)
         # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
 
