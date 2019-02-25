@@ -170,7 +170,7 @@ def adjust_variance(variance, initial_variance, num_updates):
     return max(variance - initial_variance / num_updates, 0)
 
 
-def discriminator_target(size):
+def soft_real_label(size):
     """
     Tensor containing soft labels, with shape = size
     """
@@ -180,7 +180,7 @@ def discriminator_target(size):
     return torch.Tensor(size).zero_()
 
 
-def generator_target(size):
+def soft_fake_label(size):
     """
     Tensor containing zeroes, with shape = size
     :param size: shape of vector
@@ -190,6 +190,10 @@ def generator_target(size):
     if not opt.lflip:
         return torch.Tensor(size).zero_()
     return torch.Tensor(size).uniform_(0.85, 1.0)
+
+
+def real_label(size):
+    return torch.ones(size)
 
 
 # init networks
@@ -266,21 +270,19 @@ print('Created Logger')
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
-        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 2)
+        # save real for relevance propagation
+        real_test = real_data[0].clone().unsqueeze(0)
 
         ############################
         # Train Discriminator
         ###########################
         # train with real
+
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
         real_data = F.pad(real_data, (p, p, p, p), value=utils.lowest)
-        label_real = discriminator_target(batch_size).to(gpu)
-        # save input without noise for relevance comparison
-        real_test = real_data[0].clone().unsqueeze(0)
-        # Add noise to input
-        real_data_noise = added_gaussian_chi(real_data, add_noise_var)
-        # prediction_real = discriminator(real_data_noise)
+        label_real = soft_real_label(batch_size).to(gpu)
+
         prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
@@ -290,11 +292,8 @@ for epoch in range(opt.epochs):
         noise = torch.randn(batch_size, nz, 1, 1, device=gpu)
         fake = generator(noise)
         fake = F.pad(fake, (p, p, p, p), value=utils.lowest)
-        label_fake = generator_target(batch_size).to(gpu)
+        label_fake = soft_fake_label(batch_size).to(gpu)
 
-        # Add noise to fake data
-        fake_noise = added_gaussian_chi(fake, add_noise_var)
-        # prediction_fake = discriminator(fake_noise.detach())
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
         d_err_fake.backward()
@@ -324,6 +323,7 @@ for epoch in range(opt.epochs):
         ###########################
         generator.zero_grad()
         prediction_fake_g = discriminator(fake)
+        label_real = real_label(batch_size).to(gpu)
         g_err = loss(prediction_fake_g, label_real)
         g_err.backward()
         d_fake_2 = prediction_fake_g.mean().item()
@@ -363,14 +363,6 @@ for epoch in range(opt.epochs):
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
             real_test_relevance = canonical.relprop()
-
-            # set ngpu back to opt.ngpu
-            if (opt.ngpu > 1):
-                canonical.setngpu(opt.ngpu)
-                # discriminator.setngpu(opt.ngpu)
-
-            # discriminator.train()
-            # canonical.train()
             del canonical
 
             # Add up relevance of all color channels
