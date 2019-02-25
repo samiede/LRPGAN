@@ -176,7 +176,7 @@ def discriminator_target(size):
     """
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
-        return torch.Tensor(size).uniform_(0.7, 1.0)
+        return torch.Tensor(size).uniform_(0.85, 1.0)
     return torch.Tensor(size).zero_()
 
 
@@ -189,7 +189,7 @@ def generator_target(size):
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
         return torch.Tensor(size).zero_()
-    return torch.Tensor(size).uniform_(0.7, 1.0)
+    return torch.Tensor(size).uniform_(0.85, 1.0)
 
 
 # init networks
@@ -205,8 +205,7 @@ def weights_init(m):
 
 # generator = GeneratorNet(ngpu).to(gpu)
 ref_noise = torch.randn(1, nz, 1, 1, device=gpu)
-generator = dcgm.LRPGeneratorNet(nc, ngf, ngpu).to(gpu)
-# generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
+generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf, ngpu).to(gpu)
 generator.apply(weights_init)
 if opt.loadG != '':
     dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -219,8 +218,7 @@ if opt.loadG != '':
     generator.load_state_dict(dict)
     generator.to(gpu)
 
-# discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
-discriminator = dcgm.LRPDiscriminatorNet(nc, ndf, alpha, ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')

@@ -110,7 +110,7 @@ elif opt.dataset == 'ciphar10':
     dataset = ciphar10.CIFAR10(root=out_dir, download=True, train=True,
                             transform=transforms.Compose([
                                 transforms.Resize(opt.imageSize),
-                                # transforms.Grayscale(num_output_channels=1),
+                                transforms.Grayscale(num_output_channels=1),
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ]))
@@ -119,7 +119,7 @@ else:
     pass
 
 
-nc = 3
+nc = 1
 
 assert dataset
 assert nc
@@ -159,15 +159,18 @@ if opt.loadD and not opt.external:
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                              shuffle=False, num_workers=2)
 
-    # discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
-    discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    # discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     # TODO for standard DCGAN
     if torch.__version__ == '0.4.0':
-        del dict['net.1.bn2.num_batches_tracked']
-        del dict['net.2.bn3.num_batches_tracked']
-        del dict['net.3.bn4.num_batches_tracked']
-        del dict['net.4.bn5.num_batches_tracked']
+        # del dict['net.1.bn2.num_batches_tracked']
+        # del dict['net.2.bn3.num_batches_tracked']
+        # del dict['net.3.bn4.num_batches_tracked']
+        # del dict['net.4.bn5.num_batches_tracked']
+        del dict['net.1.bn3.num_batches_tracked']
+        del dict['net.2.bn4.num_batches_tracked']
+        del dict['net.3.bn5.num_batches_tracked']
     discriminator.load_state_dict(dict)
     discriminator.to(gpu)
 
@@ -215,9 +218,9 @@ if opt.loadD and not opt.external:
             discriminator.setngpu(1)
 
 
-        if batch_data.size(1) == 1:
-            batch_data = batch_data.repeat(1, 3, 1, 1)
-        flip = False
+        # if batch_data.size(1) == 1:
+        #     batch_data = batch_data.repeat(1, 3, 1, 1)
+        flip = True
         test_result, test_prob = discriminator(batch_data, flip=flip)
         print('Discriminating image no. {}: {}'.format(n_batch, test_prob.item()))
 

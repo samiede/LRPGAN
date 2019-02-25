@@ -108,8 +108,8 @@ class LRPDiscriminatorNet(nn.Module):
             # state size. (ndf*4) x 8 x 8
             nnrd.Layer(OrderedDict([
                 ('conv5',
-                 nnrd.NextConvolution(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2,
-                                      padding=1, alpha=alpha)),
+                 nnrd.NextConvolutionEps(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2,
+                                      padding=1, epsilon=0.01)),
                 ('bn5', nnrd.BatchNorm2d(ndf * 8)),
                 ('relu5', nnrd.ReLu()),
                 ('dropout5', nnrd.Dropout(0.3)),
@@ -117,8 +117,8 @@ class LRPDiscriminatorNet(nn.Module):
             ),
         )
 
-        self.lastConvolution = nnrd.LastConvolution(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4',
-                                                    stride=1, padding=0, alpha=alpha)
+        self.lastConvolution = nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4',
+                                                    stride=1, padding=0, epsilon=0.01)
 
         self.sigmoid = nn.Sigmoid()
         self.lastReLU = nnrd.ReLu()
