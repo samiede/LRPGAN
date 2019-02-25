@@ -409,7 +409,7 @@ for epoch in range(opt.epochs):
             ###### Using matplotlib Color Map ######
 
             img_name = logger.log_images(
-                test_fake_c.detach(), test_fake_c.detach(), test_fake.size(0),
+                test_fake_c.detach(), torch.sum(test_fake_c.detach(), dim=1, keepdim=True), test_fake.size(0),
                 epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
