@@ -120,7 +120,7 @@ else:
     pass
 
 
-nc = 3
+nc = 1
 
 assert dataset
 assert nc
@@ -134,7 +134,8 @@ def eps_init(m):
 
 # if we want to generate stuff
 if opt.loadG and not opt.external:
-    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=ngpu)
+    generator = dcgm.LRPGeneratorNet(nc, ngf=128, ngpu=ngpu)
+    # generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=64, ngpu=ngpu)
     # generator = dcgm.Generator(nc, ngf=128, ngpu=ngpu)
     dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
@@ -142,7 +143,7 @@ if opt.loadG and not opt.external:
         del dict['net.4.num_batches_tracked']
         del dict['net.7.num_batches_tracked']
         del dict['net.10.num_batches_tracked']
-        del dict['net.13.num_batches_tracked']
+        # del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
     generator.to(gpu)
     generator.eval()
@@ -157,9 +158,10 @@ if opt.loadG and not opt.external:
 if opt.loadD and not opt.external:
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
-                                             shuffle=False, num_workers=2)
+                                             shuffle=True, num_workers=2)
 
-    discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    # discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     # TODO for standard DCGAN
     if torch.__version__ == '0.4.0':
@@ -167,7 +169,6 @@ if opt.loadD and not opt.external:
         del dict['net.2.bn3.num_batches_tracked']
         del dict['net.3.bn4.num_batches_tracked']
         del dict['net.4.bn5.num_batches_tracked']
-
     discriminator.load_state_dict(dict)
     discriminator.to(gpu)
 
@@ -191,7 +192,7 @@ if opt.loadD and not opt.external:
         # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = torch.randn(opt.batchSize, nc, opt.imageSize, opt.imageSize, device=gpu)
         # batch_data = utils.pink_noise(1, nc, opt.imageSize, opt.imageSize).to(gpu)
-        batch_data = torch.zeros(batch_data.size()).fill_(1)
+        # batch_data = torch.zeros(batch_data.size()).fill_(1)
         # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[10, 30], [50, 40]], 1))
         # ##############################################################################################
 
@@ -208,9 +209,11 @@ if opt.loadD and not opt.external:
         if (opt.ngpu > 1):
             discriminator.setngpu(1)
 
-        print('Discriminating image no. {}'.format(n_batch))
-        test_result, test_prob = discriminator(batch_data)
-        test_relevance = discriminator.relprop()
+        flip = False
+        test_result, test_prob = discriminator(batch_data, flip=flip)
+        print('Discriminating image no. {}: {}'.format(n_batch, test_prob.item()))
+
+        test_relevance = discriminator.relprop(flip=flip)
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
         # test_sensivity = torch.autograd.grad(test_result, batch_data)[0].pw(2)
 

@@ -6,12 +6,17 @@ import errno
 import torchvision.utils as vutils
 from tensorboardX import SummaryWriter
 from IPython import display
-import torch
 from matplotlib import pyplot as plt
 import matplotlib
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import colorednoise as cn
+
+import math
+import torch
+import torch.nn.functional as F
+from torch.autograd import Variable
+from torchvision.models import inception_v3
 
 if torch.cuda.is_available():
     plt.switch_backend('agg')
@@ -255,7 +260,7 @@ class Logger:
             ax = plt.axes()
             ax.xaxis.set_visible(False)
             ax.yaxis.set_visible(False)
-            image = vutils.make_grid(images[n], normalize=True, scale_each=True, padding=0, pad_value=0, range=(lowest, highest))
+            image = vutils.make_grid(images[n], normalize=True, scale_each=True, padding=0, pad_value=0, range=(-1, 1))
             plt.imshow(np.moveaxis(image.cpu().detach().numpy(), 0, -1), aspect='auto')
             plt.axis('off')
 
@@ -478,7 +483,6 @@ def pink_noise(batch_size, channels, width, height):
 
 
 def drawBoxes(batch_size, channels, imageSize, background_fill=-1, *argv):
-
     data = torch.zeros([batch_size, channels, imageSize, imageSize]).fill_(background_fill)
     for arg in argv:
         if type(arg[1]) == int or type(arg[1]) == float:
@@ -490,10 +494,10 @@ def drawBoxes(batch_size, channels, imageSize, background_fill=-1, *argv):
                 fill = torch.ones(batch_size, channels, arg[0][1][0] - arg[0][0][0], arg[0][1][1] - arg[0][0][1]).uniform_(-1, 1)
             elif arg[1] == 'pink':
                 fill = pink_noise(batch_size, channels, arg[0][1][0] - arg[0][0][0], arg[0][1][1] - arg[0][0][1])
-        else: break
+        else:
+            break
         data[:, :, arg[0][0][0]:arg[0][1][0], arg[0][0][1]:arg[0][1][1]] = fill
     return data
-
 
 
 # set the colormap and centre the colorbar
@@ -512,3 +516,21 @@ class MidpointNormalize(colors.Normalize):
         # simple example...
         x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
+
+net = inception_v3(pretrained=True)
+
+
+def inception_score(images, batch_size=5):
+    scores, _ = net(images)
+
+    # scores = []
+    # for i in range(int(math.ceil(float(len(images)) / float(batch_size)))):
+    #     batch = Variable(torch.cat(images[i * batch_size: (i + 1) * batch_size], 0))
+    #     s, _ = net(batch)  # skipping aux logits
+    #     scores.append(s)
+    p_yx = F.softmax(scores, dim=0)
+    p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
+    KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
+    final_score = KL_d.mean()
+    return final_score
