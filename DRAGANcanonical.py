@@ -176,7 +176,7 @@ def soft_real_label(size):
     """
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
-        return torch.Tensor(size).uniform_(0.85, 1.0)
+        return torch.Tensor(size).uniform_(0.9, 1.0)
     return torch.Tensor(size).zero_()
 
 
@@ -189,7 +189,7 @@ def soft_fake_label(size):
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
         return torch.Tensor(size).zero_()
-    return torch.Tensor(size).uniform_(0.85, 1.0)
+    return torch.Tensor(size).uniform_(0.9, 1.0)
 
 
 def real_label(size):
@@ -270,8 +270,7 @@ print('Created Logger')
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
-        # save real for relevance propagation
-        real_test = real_data[0].clone().unsqueeze(0)
+
 
         ############################
         # Train Discriminator
@@ -280,7 +279,7 @@ for epoch in range(opt.epochs):
 
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
-        real_data = F.pad(real_data, (p, p, p, p), value=utils.lowest)
+        real_data = F.pad(real_data, (p, p, p, p), mode='replicate')
         label_real = soft_real_label(batch_size).to(gpu)
 
         prediction_real = discriminator(real_data)
@@ -291,7 +290,7 @@ for epoch in range(opt.epochs):
         # train with fake
         noise = torch.randn(batch_size, nz, 1, 1, device=gpu)
         fake = generator(noise)
-        fake = F.pad(fake, (p, p, p, p), value=utils.lowest)
+        fake = F.pad(fake, (p, p, p, p), mode='replicate')
         label_fake = soft_fake_label(batch_size).to(gpu)
 
         prediction_fake = discriminator(fake.detach())
@@ -343,7 +342,7 @@ for epoch in range(opt.epochs):
             Logger.batch = n_batch
             # generate fake with fixed noise
             test_fake = generator(fixed_noise)
-            test_fake = F.pad(test_fake, (p, p, p, p), value=-1)
+            test_fake = F.pad(test_fake, (p, p, p, p), mode='replicate')
 
             # clone network to remove batch norm for relevance propagation
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
@@ -360,6 +359,9 @@ for epoch in range(opt.epochs):
             test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
+            real_test = real_data[0].clone().unsqueeze(0)
+            real_data = F.pad(real_data, (p, p, p, p), mode='replicate')
+
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
             real_test_relevance = canonical.relprop()
@@ -404,8 +406,7 @@ for epoch in range(opt.epochs):
             logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
             # show images inline
-            comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
-
+            # comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
             # subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
             #                  outf + '/' + opt.dataset + '/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
 
