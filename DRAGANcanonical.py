@@ -350,23 +350,19 @@ for epoch in range(opt.epochs):
             canonical.load_state_dict(discriminator.state_dict())
             canonical.passBatchNormParametersToConvolution()
             canonical.removeBatchNormLayers()
-            # discriminator.eval()
             canonical.eval()
 
             # set ngpu to one, so relevance propagation works
             if (opt.ngpu > 1):
                 canonical.setngpu(1)
-                # discriminator.setngpu(1)
 
-            # dtest_result, dtest_prob = discriminator(test_fake)
             test_result, test_prob = canonical(test_fake)
-            # test_relevance = canonical.relprop()
+            test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
             real_test.requires_grad = True
-            # dreal_test_result, dreal_test_prob = discriminator(real_test)
             real_test_result, real_test_prob = canonical(real_test)
-            # real_test_relevance = canonical.relprop()
+            real_test_relevance = canonical.relprop()
 
             # set ngpu back to opt.ngpu
             if (opt.ngpu > 1):
@@ -378,18 +374,18 @@ for epoch in range(opt.epochs):
             del canonical
 
             # Add up relevance of all color channels
-            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            # real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
+            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
 
             bp = p
-            test_fake_c = torch.cat((test_fake[:, :, bp:-bp, bp:-bp], real_test[:, :, bp:-bp, bp:-bp]))
-            # test_relevance_c = torch.cat(
-            #     (test_relevance[:, :, bp:-bp, bp:-bp], real_test_relevance[:, :, bp:-bp, bp:-bp]))
+            test_fake_cat = torch.cat((test_fake[:, :, bp:-bp, bp:-bp], real_test[:, :, bp:-bp, bp:-bp]))
+            test_relevance_cat = torch.cat(
+                (test_relevance[:, :, bp:-bp, bp:-bp], real_test_relevance[:, :, bp:-bp, bp:-bp]))
 
             printdata = {'test_prob': test_prob.item(), 'real_test_prob': real_test_prob.item(),
                          'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
-                         'min_test_rel': torch.min(test_fake), 'max_test_rel': torch.max(test_fake),
-                         'min_real_rel': torch.min(real_test), 'max_real_rel': torch.max(real_test)}
+                         'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
+                         'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
 
             ###### Using matplotlib Color Map ######
             # minrel = test_relevance_c.min()
@@ -409,9 +405,11 @@ for epoch in range(opt.epochs):
             ###### Using matplotlib Color Map ######
 
             img_name = logger.log_images(
-                test_fake_c.detach(), torch.sum(test_fake_c.detach(), dim=1, keepdim=True), test_fake.size(0),
+                test_fake_cat.detach(), torch.sum(test_relevance_cat.detach(), dim=1, keepdim=True), test_fake.size(0),
                 epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
+
+            logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
             # show images inline
             comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])

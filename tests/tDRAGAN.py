@@ -78,6 +78,7 @@ if opt.dataset == 'mnist':
                              transform=transforms.Compose(
                                  [
                                      transforms.Resize(opt.imageSize),
+                                     # transforms.Grayscale(num_output_channels=3),
                                      transforms.ToTensor(),
                                      transforms.Normalize((0.5,), (0.5,)),
                                  ]
@@ -100,7 +101,7 @@ elif opt.dataset == 'custom':
     dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
         [
             transforms.Resize((opt.imageSize, opt.imageSize)),
-            # transforms.Grayscale(num_output_channels=1),
+            transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
@@ -160,8 +161,8 @@ if opt.loadD and not opt.external:
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                              shuffle=True, num_workers=2)
 
-    discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
-    # discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    # discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     # TODO for standard DCGAN
     if torch.__version__ == '0.4.0':
@@ -196,7 +197,7 @@ if opt.loadD and not opt.external:
         # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[10, 30], [50, 40]], 1))
         # ##############################################################################################
 
-        batch_data = F.pad(batch_data, (p, p, p, p), value=1)
+        batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
         batch_data.requires_grad = True
 
         if opt.num_images and n_batch >= opt.num_images:
@@ -209,7 +210,7 @@ if opt.loadD and not opt.external:
         if (opt.ngpu > 1):
             discriminator.setngpu(1)
 
-        flip = False
+        flip = True
         test_result, test_prob = discriminator(batch_data, flip=flip)
         print('Discriminating image no. {}: {}'.format(n_batch, test_prob.item()))
 
@@ -228,13 +229,18 @@ if opt.loadD and opt.external:
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                              shuffle=False, num_workers=2)
 
-    discriminator = dcgm.Discriminator(nc=1, ndf=64, ngpu=ngpu)
+    # discriminator = dcgm.Discriminator(nc=1, ndf=64, ngpu=ngpu)
+    discriminator = dcgm.EDiscriminator()
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
-        # del dict['main.1.num_batches_tracked']
-        del dict['main.3.num_batches_tracked']
-        del dict['main.6.num_batches_tracked']
-        del dict['main.9.num_batches_tracked']
+    #     del dict['main.1.num_batches_tracked']
+    #     del dict['main.3.num_batches_tracked']
+    #     del dict['main.6.num_batches_tracked']
+    #     del dict['main.9.num_batches_tracked']
+        del dict['conv2_bn.num_batches_tracked']
+        del dict['conv3_bn.num_batches_tracked']
+        del dict['conv4_bn.num_batches_tracked']
+
     discriminator.load_state_dict(dict)
     discriminator.to(gpu)
 
@@ -249,7 +255,7 @@ if opt.loadD and opt.external:
         # batch_data = torch.zeros(batch_data.size()).fill_(-1)
         # batch_data = batch_data + 0.02 * torch.randn(1, nc, opt.imageSize, opt.imageSize, device=gpu)
 
-        batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
+        batch_data = F.pad(batch_data, (p, p, p, p), value=0)
         batch_data.requires_grad = True
 
         if opt.num_images  and n_batch >= opt.num_images:

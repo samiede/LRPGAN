@@ -330,7 +330,7 @@ class Logger:
 
             ax0.imshow(image)
             ax0.axis('off')
-            ax0.set_title('{:.6f} / {:.6f}'.format(probability[n], relu_result[n]),
+            ax0.set_title('{:.6f} / {:.6f}'.format(probability[n].item(), relu_result[n].item()),
                           fontsize=50)
 
             ttl = ax0.title
