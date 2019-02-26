@@ -50,7 +50,7 @@ parser.add_argument('--eps_init', help='Change epsilon for eps rule after loadin
 parser.add_argument('--d_lambda', help='Factor for gradient penalty, default=10', type=float, default=10)
 parser.add_argument('--cuda', help='number of GPU', type=int, default=0)
 parser.add_argument('--gp', help='Use gradient penalty', action='store_true')
-parser.add_argument('--cont', help='Continue training -> Does not delete dir', action='store_true')
+parser.add_argument('--cont', help='Continue training -> Does not delete dir', default=None, type=int)
 parser.add_argument('--split', help='Split dataset in training and test set', action='store_true')
 parser.add_argument('--comment', help='Comment to add to run parameter file', default='', required=True)
 
@@ -304,10 +304,10 @@ for epoch in range(opt.epochs):
 
         if opt.gp:
             grad_alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
-            x_hat = torch.tensor(grad_alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
-                                 requires_grad=True)
-            pred_hat = discriminator(x_hat)
-            gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()),
+            x_gp = torch.tensor(grad_alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
+                                requires_grad=True)
+            pred_hat = discriminator(x_gp)
+            gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_gp, grad_outputs=torch.ones(pred_hat.size()),
                                             create_graph=True, retain_graph=True, only_inputs=True)[0]
             gradient_penalty = lambda_ * ((gradients.norm(2, dim=1) - 1) ** 2).mean()
             gradient_penalty.backward()
@@ -397,13 +397,16 @@ for epoch in range(opt.epochs):
             # plt.show()
 
             ###### Using matplotlib Color Map ######
+            if not opt.cont:
+                log_epoch = epoch
+            else:
+                log_epoch = epoch + opt.cont
 
             img_name = logger.log_images(
                 test_fake_cat.detach(), torch.sum(test_relevance_cat.detach(), dim=1, keepdim=True), test_fake.size(0),
-                epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
+                log_epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
-            logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
 
             # show images inline
             # comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
@@ -416,5 +419,5 @@ for epoch in range(opt.epochs):
     Logger.epoch += 1
 
     # do checkpointing
-    torch.save(generator.state_dict(), '%s/generator_epoch_{}.pth'.format(str(epoch)) % (checkpointdir))
-    torch.save(discriminator.state_dict(), '%s/discriminator_epoch_{}.pth'.format(str(epoch)) % (checkpointdir))
+    torch.save(generator.state_dict(), '%s/generator_epoch_{}.pth'.format(str(log_epoch)) % (checkpointdir))
+    torch.save(discriminator.state_dict(), '%s/discriminator_epoch_{}.pth'.format(str(log_epoch)) % (checkpointdir))
