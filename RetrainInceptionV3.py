@@ -25,6 +25,8 @@ from torch.optim import lr_scheduler
 from utils.finetuning_torchvision_models_tutorial import train_model
 
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 data_dir = 'dataset/PNGMNIST'
 dataset = datasets.ImageFolder(root=data_dir,
                          transform=transforms.Compose(
@@ -57,7 +59,7 @@ image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
 dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=32, shuffle=True, num_workers=0) for x in ['train', 'val']}
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
 class_names = image_datasets['train'].classes
-model = inception_v3(pretrained=True)
+model = inception_v3(pretrained=True).to(device)
 
 for param in model.parameters():
     param.requires_grad = False
@@ -65,10 +67,10 @@ for param in model.parameters():
 num_parameters = model.fc.in_features
 model.fc = nn.Linear(num_parameters, 10)
 
-optimizer = optim.SGD(list(filter(lambda p: p.requires_grad, model.parameters())), lr=0.001, momentum=0.9)
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+optimizer = optim.SGD(list(filter(lambda p: p.requires_grad, model.parameters())), lr=0.001, momentum=0.9).to(device)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1).to(device)
 
-criterion = nn.CrossEntropyLoss()
+criterion = nn.CrossEntropyLoss().to(device)
 
 model_ft, hist = train_model(model, dataloaders_dict, criterion, optimizer, num_epochs=15, is_inception=True)
 

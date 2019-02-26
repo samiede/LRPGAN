@@ -6,7 +6,6 @@ Finetuning Torchvision Models
 
 """
 
-
 ######################################################################
 # In this tutorial we will take a deeper look at how to finetune and
 # feature extract the `torchvision
@@ -52,9 +51,9 @@ import matplotlib.pyplot as plt
 import time
 import os
 import copy
-print("PyTorch Version: ",torch.__version__)
-print("Torchvision Version: ",torchvision.__version__)
 
+print("PyTorch Version: ", torch.__version__)
+print("Torchvision Version: ", torchvision.__version__)
 
 ######################################################################
 # Inputs
@@ -106,7 +105,6 @@ num_epochs = 15
 #   when True we only update the reshaped layer params
 feature_extract = True
 
-
 ######################################################################
 # Helper Functions
 # ----------------
@@ -134,6 +132,7 @@ feature_extract = True
 #
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+
 def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_inception=False):
     since = time.time()
 
@@ -151,7 +150,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
             if phase == 'train':
                 model.train()  # Set model to training mode
             else:
-                model.eval()   # Set model to evaluate mode
+                model.eval()  # Set model to evaluate mode
 
             running_loss = 0.0
             running_corrects = 0
@@ -176,7 +175,7 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
                         outputs, aux_outputs = model(inputs)
                         loss1 = criterion(outputs, labels)
                         loss2 = criterion(aux_outputs, labels)
-                        loss = loss1 + 0.4*loss2
+                        loss = loss1 + 0.4 * loss2
                     else:
                         outputs = model(inputs)
                         loss = criterion(outputs, labels)
