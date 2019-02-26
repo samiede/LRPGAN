@@ -67,8 +67,8 @@ for param in model.parameters():
 num_parameters = model.fc.in_features
 model.fc = nn.Linear(num_parameters, 10)
 
-optimizer = optim.SGD(list(filter(lambda p: p.requires_grad, model.parameters())), lr=0.001, momentum=0.9).to(device)
-exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1).to(device)
+optimizer = optim.SGD(list(filter(lambda p: p.requires_grad, model.parameters())), lr=0.001, momentum=0.9)
+exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
 criterion = nn.CrossEntropyLoss().to(device)
 
