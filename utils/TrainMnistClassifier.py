@@ -88,7 +88,6 @@ optimizer = torch.optim.Adadelta(net.parameters())
 for epoch in range(epochs):
     running_loss = 0.0
     for n_batch, (batch_data, labels) in enumerate(trainloader, 0):
-        print('Batch {}/{}'.format(n_batch, len(trainloader)))
         optimizer.zero_grad()
         score = net(batch_data.to(gpu))
         loss = criterion(score, labels.to(gpu))
