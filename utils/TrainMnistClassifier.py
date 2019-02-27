@@ -23,7 +23,7 @@ import numpy as np
 
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-epochs = 12
+epochs = 20
 out_dir = 'dataset/MNIST'
 transform = transforms.Compose(
     [
@@ -98,7 +98,7 @@ for epoch in range(epochs):
         running_loss += loss.item()
         if n_batch % 100 == 0:    # print every 2000 mini-batches
             print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, n_batch + 1, running_loss / 2000))
+                  (epoch + 1, n_batch + 1, running_loss / 100))
             running_loss = 0.0
 
     correct = 0
