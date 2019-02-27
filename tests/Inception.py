@@ -30,6 +30,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--ngpu', type=int)
 parser.add_argument('--genfolder', required=True)
 parser.add_argument('--epochs', required=True)
+parser.add_argument('--num_images', default=50)
 opt = parser.parse_args()
 
 
@@ -70,7 +71,7 @@ class Net(nn.Module):
 dirpath = os.path.dirname(__file__)
 filepath = os.path.join(dirpath, 'mnist_cnn.pt')
 net = Net().to(gpu)
-# net.load_state_dict(torch.load(filepath, map_location='cuda:0' if torch.cuda.is_available() else 'cpu'))
+net.load_state_dict(torch.load(filepath, map_location='cuda:0' if torch.cuda.is_available() else 'cpu'))
 
 
 def inception_score(images):
@@ -95,7 +96,7 @@ ngpu = opt.ngpu
 generator = dcgm.GeneratorNetLessCheckerboard(nc, ndf, ngpu).to(gpu)
 
 scores = []
-testsetsize = 10
+testsetsize = opt.num_images
 
 for epoch in range(int(opt.epochs)):
     print('Evaluating epoch {}'.format(epoch))
@@ -112,7 +113,7 @@ for epoch in range(int(opt.epochs)):
     print('Epoch {} has an inception score of {}'.format(epoch, scores[epoch]))
 
 
-print(max(scores))
+print('Best score of the run was {} at epoch {}'. format(max(scores).item(), scores.index(max(scores))))
 
 
 
