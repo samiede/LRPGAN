@@ -83,7 +83,7 @@ class MNISTNet(nn.Module):
 
 net = MNISTNet(1).to(gpu)
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adadelta(net.parameters())
+optimizer = torch.optim.Adam(net.parameters())
 
 for epoch in range(epochs):
     running_loss = 0.0
