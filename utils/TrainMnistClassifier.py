@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 epochs = 12
 out_dir = 'dataset/MNIST'
 transform = transforms.Compose(
@@ -79,7 +81,7 @@ class MNISTNet(nn.Module):
         return output
 
 
-net = MNISTNet(1)
+net = MNISTNet(1).to(gpu)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adadelta(net.parameters())
 
@@ -88,7 +90,7 @@ for epoch in range(epochs):
     for n_batch, (batch_data, labels) in enumerate(trainloader, 0):
         print('Batch {}/{}'.format(n_batch, len(trainloader)))
         optimizer.zero_grad()
-        score = net(batch_data)
+        score = net(batch_data.to(gpu))
         loss = criterion(score, labels)
         loss.backward()
         optimizer.step()
