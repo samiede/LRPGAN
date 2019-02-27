@@ -28,7 +28,7 @@ out_dir = 'dataset/MNIST'
 transform = transforms.Compose(
     [
         transforms.ToTensor(),
-        # transforms.Normalize((0.5,), (0.5,)),
+        transforms.Normalize((0.1307,), (0.3081,))
     ]
 )
 
@@ -112,7 +112,7 @@ for epoch in range(epochs):
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
-    print('Accuracy: %d %%' % (
+    print('Accuracy: {}'.format(
             100 * correct / total))
 
 
