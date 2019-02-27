@@ -97,7 +97,7 @@ for epoch in range(epochs):
 
         # print statistics
         running_loss += loss.item()
-        if n_batch % 2000 == 1999:    # print every 2000 mini-batches
+        if n_batch % 100 == 0:    # print every 2000 mini-batches
             print('[%d, %5d] loss: %.3f' %
                   (epoch + 1, n_batch + 1, running_loss / 2000))
             running_loss = 0.0
@@ -106,7 +106,9 @@ for epoch in range(epochs):
     total = 0
     with torch.no_grad():
         for data in testloader:
-            images, labels = data.to(gpu)
+            images, labels = data
+            images = images.to(gpu)
+            labels = labels.to(gpu)
             outputs = net(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
