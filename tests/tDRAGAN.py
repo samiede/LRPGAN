@@ -33,7 +33,7 @@ parser.add_argument('--dataset', help='mnist | anime | custom', required=True, c
 parser.add_argument('--nz', type=int, default=100, help='size of the latent z vector')
 parser.add_argument('--outf', default='output', help='folder to output images and model checkpoints')
 parser.add_argument('--ngpu', type=int, default=1, help='number of GPUs to use')
-parser.add_argument('--imageSize', type=int, default=128)
+parser.add_argument('--imageSize', type=int, default=64)
 parser.add_argument('--eps_init', help='Change epsilon for eps rule after loading state dict', type=float, default=None)
 parser.add_argument('--num_images', help='Number of images to be generated/discriminated', type=int)
 parser.add_argument('--batchSize', help='number of images processed simultaneously', default=5, type=int)
@@ -89,6 +89,7 @@ elif opt.dataset == 'anime':
     dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
         [
             transforms.Resize((opt.imageSize, opt.imageSize)),
+            # transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
@@ -100,6 +101,7 @@ elif opt.dataset == 'custom':
     dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
         [
             transforms.Resize((opt.imageSize, opt.imageSize)),
+            # transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ]
@@ -110,7 +112,7 @@ elif opt.dataset == 'ciphar10':
     dataset = ciphar10.CIFAR10(root=out_dir, download=True, train=True,
                             transform=transforms.Compose([
                                 transforms.Resize(opt.imageSize),
-                                transforms.Grayscale(num_output_channels=1),
+                                # transforms.Grayscale(num_output_channels=1),
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                             ]))
@@ -147,11 +149,17 @@ if opt.loadG and not opt.external:
     generator.to(gpu)
     generator.eval()
 
+    epoch = 5
+
     noise = torch.randn(opt.num_images, nz, 1, 1, device=gpu)
 
     images = generator(noise)
 
-    logger.save_image_batch(images, num=None)
+    # logger.save_image_batch(images, num=None)
+
+    vutils.save_image(images.detach(),
+                      '%s/fake_samples_epoch_%03d.png' % (outf, epoch),
+                      normalize=True)
 
 # if we want to discriminate stuff
 if opt.loadD and not opt.external:
@@ -159,19 +167,10 @@ if opt.loadD and not opt.external:
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batchSize,
                                              shuffle=False, num_workers=2)
 
-    discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
-    # discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    # discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+    discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
-    # TODO for standard DCGAN
-    if torch.__version__ == '0.4.0':
-        # del dict['net.1.bn2.num_batches_tracked']
-        # del dict['net.2.bn3.num_batches_tracked']
-        # del dict['net.3.bn4.num_batches_tracked']
-        # del dict['net.4.bn5.num_batches_tracked']
-        del dict['net.1.bn3.num_batches_tracked']
-        del dict['net.2.bn4.num_batches_tracked']
-        del dict['net.3.bn5.num_batches_tracked']
-    discriminator.load_state_dict(dict)
+    discriminator.load_state_dict(dict, strict=False)
     discriminator.to(gpu)
 
 
@@ -251,7 +250,7 @@ if opt.loadD and opt.external:
         del dict['conv3_bn.num_batches_tracked']
         del dict['conv4_bn.num_batches_tracked']
 
-    discriminator.load_state_dict(dict)
+    discriminator.load_state_dict(dict, strict=False)
     discriminator.to(gpu)
 
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
@@ -295,7 +294,7 @@ if opt.loadG and opt.external:
         del dict['main.4.num_batches_tracked']
         del dict['main.7.num_batches_tracked']
         del dict['main.10.num_batches_tracked']
-    generator.load_state_dict(dict)
+    generator.load_state_dict(dict, strict=False)
     generator.to(gpu)
     generator.eval()
 

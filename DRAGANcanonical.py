@@ -193,6 +193,10 @@ def soft_fake_label(size):
 
 
 def real_label(size):
+    """
+    :param size:
+    :return:
+    """
     return torch.ones(size)
 
 
@@ -381,22 +385,6 @@ for epoch in range(opt.epochs):
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
 
-            ###### Using matplotlib Color Map ######
-            # minrel = test_relevance_c.min()
-            # maxrel = test_relevance_c.max()
-            # midpoint = 0
-            # plt.imshow(test_relevance[0, 0, bp:-bp, bp:-bp].numpy(), cmap=plt.cm.RdBu_r, clim=(minrel, maxrel),
-            #            norm=MidpointNormalize(midpoint=midpoint, vmin=minrel, vmax=maxrel))
-            # # plt.pcolor(np.array(test_relevance[0, 0, bp:-bp, bp:-bp].numpy()), cmap=plt.cm.seismic, vmin=test_relevance.min(), vmax=test_relevance.max())
-            # plt.colorbar()
-            # plt.show()
-            # plt.imshow(real_test_relevance[0, 0, bp:-bp, bp:-bp].numpy(), cmap=plt.cm.RdBu_r, clim=(minrel, maxrel),
-            #            norm=MidpointNormalize(midpoint=midpoint, vmin=minrel, vmax=maxrel))
-            # # plt.pcolor(np.array(test_relevance[0, 0, bp:-bp, bp:-bp].numpy()), cmap=plt.cm.seismic, vmin=test_relevance.min(), vmax=test_relevance.max())
-            # plt.colorbar()
-            # plt.show()
-
-            ###### Using matplotlib Color Map ######
             if not opt.cont:
                 log_epoch = epoch
             else:
