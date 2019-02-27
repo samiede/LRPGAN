@@ -37,15 +37,41 @@ else:
 print(gpu)
 
 
-root_dir = '../dataset/custom'
-dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
-    [
-        transforms.Resize((299, 299)),
-        # transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ]
-))
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(1, 20, 5, 1)
+        self.conv2 = nn.Conv2d(20, 50, 5, 1)
+        self.fc1 = nn.Linear(4 * 4 * 50, 500)
+        self.fc2 = nn.Linear(500, 10)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = F.relu(self.conv2(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = x.view(-1, 4 * 4 * 50)
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return F.log_softmax(x, dim=1)
+
+
+net = Net().to(gpu)
+
+def inception_score(images, batch_size=128):
+    scores, _ = net(images)
+
+    # scores = []
+    # for i in range(int(math.ceil(float(len(images)) / float(batch_size)))):
+    #     batch = Variable(torch.cat(images[i * batch_size: (i + 1) * batch_size], 0))
+    #     s, _ = net(batch)  # skipping aux logits
+    #     scores.append(s)
+    p_yx = F.softmax(scores, dim=0)
+    p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
+    KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
+    final_score = KL_d.mean()
+    return final_score
+
 
 batch_size = 9
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,

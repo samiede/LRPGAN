@@ -55,7 +55,7 @@ parser.add_argument('--split', help='Split dataset in training and test set', ac
 parser.add_argument('--comment', help='Comment to add to run parameter file', default='', required=True)
 
 opt = parser.parse_args()
-outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0])
+outf = '{}/{}/{}_{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0], opt.dataset, opt.comment)
 checkpointdir = '{}/{}'.format(outf, 'checkpoints')
 ngpu = int(opt.ngpu)
 ngf = int(opt.ngf)

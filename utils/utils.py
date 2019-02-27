@@ -361,8 +361,10 @@ class Logger:
     @staticmethod
     def save_intermediate_heatmap(relevance, name):
         i = 0
-
         directory_name = os.path.basename(sys.argv[0]).split('.')[0]
+
+        print(directory_name)
+        exit()
         out_dir = './output/{}/intermediate/epoch {}/batch {}'.format(directory_name, str(Logger.epoch), str(Logger.batch))
 
         Logger._make_dir(out_dir)
