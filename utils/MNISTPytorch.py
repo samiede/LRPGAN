@@ -7,12 +7,14 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 
 
+
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 20, 5, 1)
         self.conv2 = nn.Conv2d(20, 50, 5, 1)
-        self.fc1 = nn.Linear(4 * 4 * 50, 500)
+        self.conv3 = nn.Conv2d(50, 80, 5, 1)
+        self.fc1 = nn.Linear(4 * 4 * 80, 500)
         self.fc2 = nn.Linear(500, 10)
 
     def forward(self, x):
@@ -20,7 +22,9 @@ class Net(nn.Module):
         x = F.max_pool2d(x, 2, 2)
         x = F.relu(self.conv2(x))
         x = F.max_pool2d(x, 2, 2)
-        x = x.view(-1, 4 * 4 * 50)
+        x = F.relu(self.conv3(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = x.view(-1, 4 * 4 * 80)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
@@ -93,12 +97,14 @@ def main():
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST('dataset/MNIST', train=True, download=True,
                        transform=transforms.Compose([
+                           transforms.Resize(64),
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(
         datasets.MNIST('dataset/MNIST', train=False, transform=transforms.Compose([
+            transforms.Resize(64),
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])),

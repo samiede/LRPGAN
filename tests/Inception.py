@@ -26,6 +26,13 @@ import errno
 import matplotlib.pyplot as plt
 import numpy as np
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--ngpu', type=int)
+parser.add_argument('--genfolder', required=True)
+parser.add_argument('--epochs', required=True)
+opt = parser.parse_args()
+
+
 # CUDA everything
 cudnn.benchmark = True
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -42,7 +49,8 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 20, 5, 1)
         self.conv2 = nn.Conv2d(20, 50, 5, 1)
-        self.fc1 = nn.Linear(4 * 4 * 50, 500)
+        self.conv3 = nn.Conv2d(50, 80, 5, 1)
+        self.fc1 = nn.Linear(4 * 4 * 80, 500)
         self.fc2 = nn.Linear(500, 10)
 
     def forward(self, x):
@@ -50,16 +58,23 @@ class Net(nn.Module):
         x = F.max_pool2d(x, 2, 2)
         x = F.relu(self.conv2(x))
         x = F.max_pool2d(x, 2, 2)
-        x = x.view(-1, 4 * 4 * 50)
+        x = F.relu(self.conv3(x))
+        x = F.max_pool2d(x, 2, 2)
+        x = x.view(-1, 4 * 4 * 80)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
-        return F.log_softmax(x, dim=1)
+        return x
 
 
+# Load Test network
+dirpath = os.path.dirname(__file__)
+filepath = os.path.join(dirpath, 'mnist_cnn.pt')
 net = Net().to(gpu)
+# net.load_state_dict(torch.load(filepath, map_location='cuda:0' if torch.cuda.is_available() else 'cpu'))
 
-def inception_score(images, batch_size=128):
-    scores, _ = net(images)
+
+def inception_score(images):
+    scores = net(images)
 
     # scores = []
     # for i in range(int(math.ceil(float(len(images)) / float(batch_size)))):
@@ -73,12 +88,33 @@ def inception_score(images, batch_size=128):
     return final_score
 
 
-batch_size = 9
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
-                                         shuffle=False, num_workers=2)
+nc = 1
+ndf = 128
+alpha = 2
+ngpu = opt.ngpu
+generator = dcgm.GeneratorNetLessCheckerboard(nc, ndf, ngpu).to(gpu)
 
-score = 0
-for n_batch, (batch_data, _) in enumerate(dataloader, 0):
-    score = utils.inception_score(batch_data, batch_size)
+scores = []
+testsetsize = 10
 
-print(score.item())
+for epoch in range(int(opt.epochs)):
+    print('Evaluating epoch {}'.format(epoch))
+    dictpath = os.path.join(opt.genfolder, 'generator_epoch_{}.pth'.format(epoch))
+    dict = torch.load(dictpath,  map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+    generator.load_state_dict(dict, strict=False)
+    generator.eval()
+    print('Generating images...')
+    noise = torch.randn(testsetsize, 100, 1, 1)
+    images = generator(noise)
+
+    print('Calculating score...')
+    scores.append(inception_score(images))
+    print('Epoch {} has an inception score of {}'.format(epoch, scores[epoch]))
+
+
+print(max(scores))
+
+
+
+
+

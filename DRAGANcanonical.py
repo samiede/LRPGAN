@@ -53,7 +53,7 @@ parser.add_argument('--gp', help='Use gradient penalty', action='store_true')
 parser.add_argument('--cont', help='Continue training -> Does not delete dir', default=None, type=int)
 parser.add_argument('--split', help='Split dataset in training and test set', action='store_true')
 parser.add_argument('--comment', help='Comment to add to run parameter file', default='', required=True)
-parser.add_argument('--add_noise', help='Use additive noise to stabilize trainint', action=store_true)
+parser.add_argument('--add_noise', help='Use additive noise to stabilize trainint', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}/{}_{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0], opt.dataset, opt.comment)

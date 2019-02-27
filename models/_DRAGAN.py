@@ -269,11 +269,11 @@ class GeneratorNetLessCheckerboard(nn.Module):
         nz = 100
         bias = True
         self.net = nn.Sequential(
-            nn.ConvTranspose2d(nz, ngf * 8, 4, 1, 0, bias=bias),
-            nn.BatchNorm2d(ngf * 8),
+            nn.ConvTranspose2d(nz, ngf * 16, 4, 1, 0, bias=bias),
+            nn.BatchNorm2d(ngf * 16),
             nn.LeakyReLU(0.2, inplace=True),
 
-            nn.ConvTranspose2d(ngf * 8, ngf * 8, 3, 1, 1, bias=bias),
+            nn.ConvTranspose2d(ngf * 16, ngf * 8, 3, 1, 1, bias=bias),
             nn.BatchNorm2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
 
