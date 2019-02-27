@@ -91,7 +91,7 @@ for epoch in range(epochs):
         print('Batch {}/{}'.format(n_batch, len(trainloader)))
         optimizer.zero_grad()
         score = net(batch_data.to(gpu))
-        loss = criterion(score, labels)
+        loss = criterion(score, labels.to(gpu))
         loss.backward()
         optimizer.step()
 
