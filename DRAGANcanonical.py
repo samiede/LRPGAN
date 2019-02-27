@@ -53,6 +53,7 @@ parser.add_argument('--gp', help='Use gradient penalty', action='store_true')
 parser.add_argument('--cont', help='Continue training -> Does not delete dir', default=None, type=int)
 parser.add_argument('--split', help='Split dataset in training and test set', action='store_true')
 parser.add_argument('--comment', help='Comment to add to run parameter file', default='', required=True)
+parser.add_argument('--add_noise', help='Use additive noise to stabilize trainint', action=store_true)
 
 opt = parser.parse_args()
 outf = '{}/{}/{}_{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0], opt.dataset, opt.comment)
@@ -176,7 +177,7 @@ def soft_real_label(size):
     """
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
-        return torch.Tensor(size).uniform_(0.9, 1.0)
+        return torch.Tensor(size).uniform_(0.8, 1.0)
     return torch.Tensor(size).zero_()
 
 
@@ -189,7 +190,7 @@ def soft_fake_label(size):
     # noinspection PyUnresolvedReferences
     if not opt.lflip:
         return torch.Tensor(size).zero_()
-    return torch.Tensor(size).uniform_(0.9, 1.0)
+    return torch.Tensor(size).uniform_(0.8, 1.0)
 
 
 def real_label(size):
@@ -274,6 +275,7 @@ print('Created Logger')
 for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
+        add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 4)
 
 
         ############################
@@ -286,6 +288,13 @@ for epoch in range(opt.epochs):
         real_data = F.pad(real_data, (p, p, p, p), mode='replicate')
         label_real = soft_real_label(batch_size).to(gpu)
 
+        # save input without noise for relevance comparison
+        real_test = real_data[0].clone().unsqueeze(0)
+
+        # Add noise to input
+        if opt.add_noise:
+            real_data = added_gaussian_chi(real_data, add_noise_var)
+
         prediction_real = discriminator(real_data)
         d_err_real = loss(prediction_real, label_real)
         d_err_real.backward()
@@ -296,6 +305,10 @@ for epoch in range(opt.epochs):
         fake = generator(noise)
         fake = F.pad(fake, (p, p, p, p), mode='replicate')
         label_fake = soft_fake_label(batch_size).to(gpu)
+
+        # Add noise to fake
+        if opt.add_noise:
+            fake = added_gaussian_chi(fake, add_noise_var)
 
         prediction_fake = discriminator(fake.detach())
         d_err_fake = loss(prediction_fake, label_fake)
@@ -325,6 +338,14 @@ for epoch in range(opt.epochs):
         # Train Generator
         ###########################
         generator.zero_grad()
+        noise = torch.randn(batch_size, nz, 1, 1, device=gpu)
+        fake = generator(noise)
+        fake = F.pad(fake, (p, p, p, p), mode='replicate')
+
+        # Add noise to fake
+        if opt.add_noise:
+            fake = added_gaussian_chi(fake, add_noise_var)
+
         prediction_fake_g = discriminator(fake)
         label_real = real_label(batch_size).to(gpu)
         g_err = loss(prediction_fake_g, label_real)
