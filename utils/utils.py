@@ -347,12 +347,6 @@ class Logger:
             ax1.axis('off')
 
             index += 2
-        # else:
-        #     fig = plt.figure(figsize=(32, 16), facecolor='white')
-        #     image = vutils.make_grid(images, normalize=True, scale_each=True, pad_value=1)
-        #     plt.imshow(np.moveaxis(image.detach().numpy(), 0, -1))
-        #     plt.axis('off')
-        #     plt.gcf()
 
         fig.savefig('{}/{}.png'.format(out_dir_png, num), dpi=50)
         fig.savefig('{}/{}.pdf'.format(out_dir_pdf, num), dpi=100)
@@ -485,8 +479,11 @@ def pink_noise(batch_size, channels, width, height):
     return pink_noise
 
 
-def drawBoxes(batch_size, channels, imageSize, background_fill=-1, *argv):
-    data = torch.zeros([batch_size, channels, imageSize, imageSize]).fill_(background_fill)
+def drawBoxes(data, add=False, background_fill=-1, *argv):
+    batch_size = data.size(0)
+    channels = data.size(1)
+    imageSize = data.size(2)
+
     for arg in argv:
         if type(arg[1]) == int or type(arg[1]) == float:
             fill = torch.Tensor(arg[0][1][0] - arg[0][0][0], arg[0][1][1] - arg[0][0][1]).fill_(arg[1])
@@ -498,8 +495,13 @@ def drawBoxes(batch_size, channels, imageSize, background_fill=-1, *argv):
             elif arg[1] == 'pink':
                 fill = pink_noise(batch_size, channels, arg[0][1][0] - arg[0][0][0], arg[0][1][1] - arg[0][0][1])
         else:
-            break
-        data[:, :, arg[0][0][0]:arg[0][1][0], arg[0][0][1]:arg[0][1][1]] = fill
+            fill = torch.zeros([batch_size, channels, imageSize, imageSize]).fill_(background_fill)
+
+        if add:
+            data[:, :, arg[0][0][0]:arg[0][1][0], arg[0][0][1]:arg[0][1][1]] = fill
+        else:
+            data = torch.zeros([batch_size, channels, imageSize, imageSize]).fill_(background_fill)
+            data[:, :, arg[0][0][0]:arg[0][1][0], arg[0][0][1]:arg[0][1][1]] = fill
     return data
 
 

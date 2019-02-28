@@ -227,7 +227,7 @@ if opt.loadG != '':
     generator.load_state_dict(dict)
     generator.to(gpu)
 
-discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc, ndf, alpha, ngpu).to(gpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonicalLeaky(nc, ndf, alpha, ngpu).to(gpu)
 discriminator.apply(weights_init)
 if opt.loadD != '':
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -372,39 +372,40 @@ for epoch in range(opt.epochs):
             # clone network to remove batch norm for relevance propagation
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
-            canonical.passBatchNormParametersToConvolution()
-            canonical.removeBatchNormLayers()
+            # canonical.passBatchNormParametersToConvolution()
+            # canonical.removeBatchNormLayers()
             canonical.eval()
-
+            #
             # set ngpu to one, so relevance propagation works
-            if (opt.ngpu > 1):
-                canonical.setngpu(1)
+            # if (opt.ngpu > 1):
+            #     canonical.setngpu(1)
 
             test_result, test_prob = canonical(test_fake)
-            test_relevance = canonical.relprop()
+            # test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
             real_test = real_data[0].clone().unsqueeze(0)
             real_data = F.pad(real_data, (p, p, p, p), mode='replicate')
-
-            real_test.requires_grad = True
+            #
+            # real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
-            real_test_relevance = canonical.relprop()
+            # real_test_relevance = canonical.relprop()
             del canonical
 
             # Add up relevance of all color channels
-            test_relevance = torch.sum(test_relevance, 1, keepdim=True)
-            real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
-
+            # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+            # real_test_relevance = torch.sum(real_test_relevance, 1, keepdim=True)
+            #
             bp = p
+
             test_fake_cat = torch.cat((test_fake[:, :, bp:-bp, bp:-bp], real_test[:, :, bp:-bp, bp:-bp]))
             test_relevance_cat = torch.cat(
-                (test_relevance[:, :, bp:-bp, bp:-bp], real_test_relevance[:, :, bp:-bp, bp:-bp]))
+                (test_fake[:, :, bp:-bp, bp:-bp], test_fake[:, :, bp:-bp, bp:-bp]))
 
             printdata = {'test_prob': test_prob.item(), 'real_test_prob': real_test_prob.item(),
                          'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
-                         'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
-                         'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
+                         'min_test_rel': torch.min(test_fake), 'max_test_rel': torch.max(test_fake),
+                         'min_real_rel': torch.min(real_test), 'max_real_rel': torch.max(real_test)}
 
             if not opt.cont:
                 log_epoch = epoch
@@ -412,7 +413,7 @@ for epoch in range(opt.epochs):
                 log_epoch = epoch + opt.cont
 
             img_name = logger.log_images(
-                test_fake_cat.detach(), test_relevance_cat.detach(), test_fake.size(0),
+                test_fake_cat.detach(), torch.sum(test_relevance_cat.detach(), dim=1, keepdim=True), test_fake.size(0),
                 log_epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 

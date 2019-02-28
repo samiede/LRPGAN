@@ -77,11 +77,6 @@ net.load_state_dict(torch.load(filepath, map_location='cuda:0' if torch.cuda.is_
 def inception_score(images):
     scores = net(images)
 
-    # scores = []
-    # for i in range(int(math.ceil(float(len(images)) / float(batch_size)))):
-    #     batch = Variable(torch.cat(images[i * batch_size: (i + 1) * batch_size], 0))
-    #     s, _ = net(batch)  # skipping aux logits
-    #     scores.append(s)
     p_yx = F.softmax(scores, dim=0)
     p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
     KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
