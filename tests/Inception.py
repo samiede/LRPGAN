@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--ngpu', type=int)
 parser.add_argument('--genfolder', required=True)
 parser.add_argument('--epochs', required=True)
-parser.add_argument('--num_images', default=100)
+parser.add_argument('--num_images', default=5)
 parser.add_argument('--filename')
 opt = parser.parse_args()
 
@@ -80,7 +80,7 @@ net.load_state_dict(torch.load(filepath, map_location='cuda:0' if torch.cuda.is_
 def inception_score(images):
     scores = net(images)
 
-    p_yx = F.softmax(scores, dim=0)
+    p_yx = F.softmax(scores, dim=1)
     p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
     KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
     final_score = KL_d.mean()
