@@ -30,7 +30,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--ngpu', type=int)
 parser.add_argument('--genfolder', required=True)
 parser.add_argument('--epochs', required=True)
-parser.add_argument('--num_images', default=50)
+parser.add_argument('--num_images', default=100)
+parser.add_argument('--filename')
 opt = parser.parse_args()
 
 
@@ -44,6 +45,8 @@ else:
     torch.set_default_tensor_type('torch.FloatTensor')
 print(gpu)
 
+random.seed(1234)
+torch.manual_seed(1234)
 
 class Net(nn.Module):
     def __init__(self):
@@ -110,7 +113,12 @@ for epoch in range(int(opt.epochs)):
 
 print('Best score of the run was {} at epoch {}'. format(max(scores).item(), scores.index(max(scores))))
 
+text_file = open("{}/{}.txt".format('./', opt.filename), "w+")
+text_file.write('Best score of the run was {} at epoch {}\n'. format(max(scores).item(), scores.index(max(scores))))
+for score in scores:
+    text_file.write('{}\n'.format(str(score.item())))
 
+text_file.close()
 
 
 

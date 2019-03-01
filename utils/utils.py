@@ -523,19 +523,19 @@ class MidpointNormalize(colors.Normalize):
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
-net = inception_v3(pretrained=True)
-
-
-def inception_score(images, batch_size=5):
-    scores, _ = net(images)
-
-    # scores = []
-    # for i in range(int(math.ceil(float(len(images)) / float(batch_size)))):
-    #     batch = Variable(torch.cat(images[i * batch_size: (i + 1) * batch_size], 0))
-    #     s, _ = net(batch)  # skipping aux logits
-    #     scores.append(s)
-    p_yx = F.softmax(scores, dim=0)
-    p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
-    KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
-    final_score = KL_d.mean()
-    return final_score
+# net = inception_v3(pretrained=True)
+#
+#
+# def inception_score(images, batch_size=5):
+#     scores, _ = net(images)
+#
+#     # scores = []
+#     # for i in range(int(math.ceil(float(len(images)) / float(batch_size)))):
+#     #     batch = Variable(torch.cat(images[i * batch_size: (i + 1) * batch_size], 0))
+#     #     s, _ = net(batch)  # skipping aux logits
+#     #     scores.append(s)
+#     p_yx = F.softmax(scores, dim=0)
+#     p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
+#     KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
+#     final_score = KL_d.mean()
+#     return final_score

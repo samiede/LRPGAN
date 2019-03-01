@@ -121,7 +121,7 @@ else:
     pass
 
 
-nc = 1
+nc = 3
 
 assert dataset
 assert nc
@@ -158,8 +158,8 @@ if opt.loadG and not opt.external:
     # logger.save_image_batch(images, num=None)
 
     vutils.save_image(images.detach(),
-                      '%s/fake_samples_epoch_%03d.png' % (outf, epoch),
-                      normalize=True)
+                      '{}/{}/{}/fake_samples_epoch_{}.png'.format(outf, opt.dataset, 'generated', epoch),
+                      normalize=True, nrow=int(np.sqrt(opt.num_images)))
 
 # if we want to discriminate stuff
 if opt.loadD and not opt.external:

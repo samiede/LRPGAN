@@ -4,3 +4,4 @@ dataset/
 __pycache__
 Previous\ Runs/
 utils/portrait/
+tests/output/
