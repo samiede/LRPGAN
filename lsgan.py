@@ -79,11 +79,16 @@ class Discriminator(nn.Module):
                 block.append(nn.BatchNorm2d(out_filters, 0.8))
             return block
 
+        self.one = discriminator_block(opt.channels, 16, bn=False)
+        self.two = discriminator_block(16, 32)
+        self.three = discriminator_block(32, 64)
+        self.four = discriminator_block(64, 128)
+
         self.model = nn.Sequential(
-            discriminator_block(opt.channels, 16, bn=False),
-            discriminator_block(16, 32),
-            discriminator_block(32, 64),
-            discriminator_block(64, 128),
+            self.one,
+            self.two,
+            self.three,
+            self.four
         )
 
         # The height and width of downsampled image
