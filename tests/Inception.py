@@ -120,7 +120,7 @@ for epoch in range(int(opt.epochs)):
         images = generator(noise)
         torch.cat((internal_scores, inception_score(images)), dim=0)
 
-    scores.append(internal_scores.mean())
+    scores.append(torch.exp(internal_scores.mean()))
     print('Epoch {} has an inception score of {}'.format(epoch, scores[epoch]))
 
 print('Best score of the run was {} at epoch {}'. format(max(scores).item(), scores.index(max(scores))))
