@@ -30,8 +30,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--ngpu', type=int)
 parser.add_argument('--genfolder', required=True)
 parser.add_argument('--epochs', required=True)
-parser.add_argument('--num_images', default=5)
+parser.add_argument('--num_images', default=10)
 parser.add_argument('--filename')
+parser.add_argument('--batch_size', default=2)
 opt = parser.parse_args()
 
 
@@ -83,8 +84,8 @@ def inception_score(images):
     p_yx = F.softmax(scores, dim=1)
     p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
     KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
-    final_score = KL_d.mean()
-    return final_score
+    # final_score = KL_d.mean()
+    return KL_d
 
 
 nc = 1
@@ -94,7 +95,9 @@ ngpu = opt.ngpu
 generator = dcgm.GeneratorNetLessCheckerboard(nc, ndf, ngpu).to(gpu)
 
 scores = []
-testsetsize = opt.num_images
+testsetsize = int(opt.num_images)
+batch_size = int(opt.batch_size)
+num_images = int(opt.num_images)
 
 for epoch in range(int(opt.epochs)):
     print('Evaluating epoch {}'.format(epoch))
@@ -102,14 +105,23 @@ for epoch in range(int(opt.epochs)):
     dict = torch.load(dictpath,  map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     generator.load_state_dict(dict, strict=False)
     generator.eval()
-    print('Generating images...')
-    noise = torch.randn(testsetsize, 100, 1, 1)
+
+    it = num_images // batch_size
+
+    noise = torch.randn(batch_size, 100, 1, 1)
     images = generator(noise)
 
-    print('Calculating score...')
-    scores.append(inception_score(images))
-    print('Epoch {} has an inception score of {}'.format(epoch, scores[epoch]))
+    internal_scores = inception_score(images)
+    print('Generating images and calculating score...')
 
+    for iteration in range(1, it):
+        print('Internal it: {}'.format(iteration))
+        noise = torch.randn(batch_size, 100, 1, 1)
+        images = generator(noise)
+        torch.cat((internal_scores, inception_score(images)), dim=0)
+
+    scores.append(internal_scores.mean())
+    print('Epoch {} has an inception score of {}'.format(epoch, scores[epoch]))
 
 print('Best score of the run was {} at epoch {}'. format(max(scores).item(), scores.index(max(scores))))
 
