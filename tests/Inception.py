@@ -118,7 +118,7 @@ for epoch in range(int(opt.epochs)):
         print('Internal it: {}'.format(iteration))
         noise = torch.randn(batch_size, 100, 1, 1)
         images = generator(noise)
-        torch.cat((internal_scores, inception_score(images)).detach(), dim=0)
+        torch.cat((internal_scores, inception_score(images).detach()), dim=0)
 
     scores.append(torch.exp(internal_scores.mean()).detach())
     print('Epoch {} has an inception score of {}'.format(epoch, scores[epoch]))
