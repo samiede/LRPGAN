@@ -36,6 +36,8 @@ parser.add_argument('--num_images', default=100)
 parser.add_argument('--outf')
 opt = parser.parse_args()
 
+random.seed(1234)
+torch.manual_seed(1234)
 
 # CUDA everything
 cudnn.benchmark = True
@@ -80,7 +82,6 @@ for epoch in range(int(opt.epochs)):
 
     images = generator(noise)
 
-    # logger.save_image_batch(images, num=None)
 
     vutils.save_image(images.detach(),
                       '{}/fake_samples_epoch_{}.png'.format(outf, epoch),
