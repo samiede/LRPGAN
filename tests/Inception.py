@@ -76,16 +76,27 @@ dirpath = os.path.dirname(__file__)
 filepath = os.path.join(dirpath, 'mnist_cnn.pt')
 net = Net().to(gpu)
 net.load_state_dict(torch.load(filepath, map_location='cuda:0' if torch.cuda.is_available() else 'cpu'))
+#
+#
+# def inception_score(images):
+#     scores = net(images)
+#
+#     p_yx = F.softmax(scores, dim=1)
+#     p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
+#     KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
+#     # final_score = KL_d.mean()
+#     return KL_d
 
-
-def inception_score(images):
-    scores = net(images)
+def inception_score(scores):
+    # scores = net(images)
 
     p_yx = F.softmax(scores, dim=1)
     p_y = p_yx.mean(0).unsqueeze(0).expand(p_yx.size(0), -1)
     KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
-    # final_score = KL_d.mean()
-    return KL_d
+    final_score = KL_d.mean()
+    return final_score
+
+
 
 
 nc = 1
@@ -94,7 +105,7 @@ alpha = 2
 ngpu = opt.ngpu
 generator = dcgm.GeneratorNetLessCheckerboard(nc, ndf, ngpu).to(gpu)
 
-scores = []
+all_scores = []
 testsetsize = int(opt.num_images)
 batch_size = int(opt.batch_size)
 num_images = int(opt.num_images)
@@ -111,23 +122,24 @@ for epoch in range(int(opt.epochs)):
     noise = torch.randn(batch_size, 100, 1, 1)
     images = generator(noise)
 
-    internal_scores = inception_score(images)
+    internal_scores = net(images)
     print('Generating images and calculating score...')
 
     for iteration in range(1, it):
-        print('Internal it: {}'.format(iteration))
         noise = torch.randn(batch_size, 100, 1, 1)
         images = generator(noise)
-        torch.cat((internal_scores, inception_score(images).detach()), dim=0)
+        scores = net(images)
+        internal_scores = torch.cat((internal_scores, scores.detach()), dim=0)
 
-    scores.append(torch.exp(internal_scores.mean()).detach())
-    print('Epoch {} has an inception score of {}'.format(epoch, scores[epoch]))
+    log_inception = inception_score(internal_scores)
+    all_scores.append(torch.exp(log_inception.detach()))
+    print('Epoch {} has an inception score of {}'.format(epoch, all_scores[epoch]))
 
-print('Best score of the run was {} at epoch {}'. format(max(scores).item(), scores.index(max(scores))))
+print('Best score of the run was {} at epoch {}'. format(max(all_scores).item(), all_scores.index(max(all_scores))))
 
 text_file = open("{}/{}.txt".format('./', opt.filename), "w+")
-text_file.write('Best score of the run was {} at epoch {}\n'. format(max(scores).item(), scores.index(max(scores))))
-for score in scores:
+text_file.write('Best score of the run was {} at epoch {}\n'. format(max(all_scores).item(), all_scores.index(max(all_scores))))
+for score in all_scores:
     text_file.write('{}\n'.format(str(score.item())))
 
 text_file.close()
