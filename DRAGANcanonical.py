@@ -397,8 +397,8 @@ for epoch in range(opt.epochs):
             test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
-            real_test = real_data[0].clone().unsqueeze(0)
-            real_data = F.pad(real_data, (p, p, p, p), mode='replicate')
+            real_test = real_test[0].clone().unsqueeze(0)
+            real_test = F.pad(real_test, (p, p, p, p), mode='replicate')
 
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
