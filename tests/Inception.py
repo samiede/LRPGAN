@@ -54,8 +54,8 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 20, 5, 1)
         self.conv2 = nn.Conv2d(20, 50, 5, 1)
-        self.conv3 = nn.Conv2d(50, 80, 5, 1)
-        self.fc1 = nn.Linear(4 * 4 * 80, 500)
+        self.conv3 = nn.Conv2d(50, 100, 5, 1)
+        self.fc1 = nn.Linear(4 * 4 * 100, 500)
         self.fc2 = nn.Linear(500, 10)
 
     def forward(self, x):
@@ -86,6 +86,24 @@ net.load_state_dict(torch.load(filepath, map_location='cuda:0' if torch.cuda.is_
 #     KL_d = p_yx * (torch.log(p_yx) - torch.log(p_y))
 #     # final_score = KL_d.mean()
 #     return KL_d
+
+
+out_dir = '../dataset/MNIST'
+dataset = datasets.MNIST(root=out_dir, train=True, download=True,
+                         transform=transforms.Compose(
+                             [
+                                 transforms.Resize(64),
+                                 transforms.ToTensor(),
+                                 transforms.Normalize((0.5,), (0.5,)),
+                             ]
+                         ))
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
+                                         shuffle=False, num_workers=2)
+
+for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+    scores = net(batch_data)
+    print(scores)
+
 
 def inception_score(scores):
     # scores = net(images)

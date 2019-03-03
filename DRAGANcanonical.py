@@ -127,8 +127,21 @@ elif opt.dataset == 'anime':
         ]
     ))
     nc = 3
+
+elif opt.dataset == 'portrait':
+    root_dir = 'dataset/portrait'
+    dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
+        [
+            transforms.Resize((opt.imageSize, opt.imageSize)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ]
+    ))
+    nc = 3
+
 else:
     pass
+
 
 assert dataset
 

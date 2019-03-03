@@ -136,8 +136,9 @@ def eps_init(m):
 # if we want to generate stuff
 if opt.loadG and not opt.external:
     # generator = dcgm.LRPGeneratorNet(nc, ngf=64, ngpu=ngpu)
-    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=ngpu)
     # generator = dcgm.Generator(nc, ngf=128, ngpu=ngpu)
+
+    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=ngpu)
     dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
     if torch.__version__ == '0.4.0':
         del dict['net.1.num_batches_tracked']
@@ -149,17 +150,17 @@ if opt.loadG and not opt.external:
     generator.to(gpu)
     generator.eval()
 
-    epoch = 5
+    epoch = 10
 
     noise = torch.randn(opt.num_images, nz, 1, 1, device=gpu)
 
     images = generator(noise)
 
-    # logger.save_image_batch(images, num=None)
+    logger.save_image_batch(images, num=None)
 
-    vutils.save_image(images.detach(),
-                      '{}/{}/{}/fake_samples_epoch_{}.png'.format(outf, opt.dataset, 'generated', epoch),
-                      normalize=True, nrow=int(np.sqrt(opt.num_images)))
+    # vutils.save_image(images.detach(),
+    #                   '{}/{}/{}/fake_samples_epoch_{}.png'.format(outf, opt.dataset, 'generated', epoch),
+    #                   normalize=True, nrow=int(np.sqrt(opt.num_images)))
 
 # if we want to discriminate stuff
 if opt.loadD and not opt.external:
