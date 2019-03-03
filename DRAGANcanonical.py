@@ -298,11 +298,12 @@ for epoch in range(opt.epochs):
 
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
+        real_test = real_data[0].clone().unsqueeze(0)
+        
         real_data = F.pad(real_data, (p, p, p, p), mode='replicate')
         label_real = soft_real_label(batch_size).to(gpu)
 
         # save input without noise for relevance comparison
-        real_test = real_data[0].clone().unsqueeze(0)
 
         # Add noise to input
         if opt.add_noise:
