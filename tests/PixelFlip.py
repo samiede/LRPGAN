@@ -144,7 +144,6 @@ for n_batch, (batch_data, _) in enumerate(dataloader, 0):
     discriminator.removeBatchNormLayers()
     discriminator.eval()
 
-
     flip = True
     test_result, test_prob = discriminator(batch_data, flip=flip)
 

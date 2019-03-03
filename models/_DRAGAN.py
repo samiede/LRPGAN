@@ -109,7 +109,7 @@ class LRPDiscriminatorNet(nn.Module):
             nnrd.Layer(OrderedDict([
                 ('conv5',
                  nnrd.NextConvolutionEps(in_channels=ndf * 4, out_channels=ndf * 8, kernel_size=4, name='3', stride=2,
-                                      padding=1, epsilon=0.01)),
+                                         padding=1, epsilon=0.01)),
                 ('bn5', nnrd.BatchNorm2d(ndf * 8)),
                 ('relu5', nnrd.ReLu()),
                 ('dropout5', nnrd.Dropout(0.3)),
@@ -118,7 +118,7 @@ class LRPDiscriminatorNet(nn.Module):
         )
 
         self.lastConvolution = nnrd.LastConvolutionEps(in_channels=ndf * 8, out_channels=1, kernel_size=4, name='4',
-                                                    stride=1, padding=0, epsilon=0.01)
+                                                       stride=1, padding=0, epsilon=0.01)
 
         self.sigmoid = nn.Sigmoid()
         self.lastReLU = nnrd.ReLu()
@@ -306,44 +306,72 @@ class GeneratorNetLessCheckerboard(nn.Module):
         return output
 
 
+class Print(nn.Module):
+    def forward(self, input):
+        print(input.shape)
+        return input
+
+
+class Reshape(nn.Module):
+    def __init__(self, width, height, ngf):
+        super(Reshape, self).__init__()
+        self.shape = (width, height)
+        self.ngf = ngf
+
+    def forward(self, input):
+        print(input.shape)
+        return input.reshape(input.size(0), self.ngf, self.shape[0], self.shape[1])
+
+
+class Squeeze(nn.Module):
+    def forward(self, input):
+        return input.view(-1, 100)
+
+
 class GeneratorNetLessCheckerboardUpsample(nn.Module):
     def __init__(self, nc, ngf, ngpu):
         super(GeneratorNetLessCheckerboardUpsample, self).__init__()
         self.ngpu = ngpu
         nz = 100
-        bias = False
+        bias = True
+        self.reshape = Reshape(4, 4, ngf)
+        self.print = Print()
+        self.squeeze = Squeeze()
+
         self.net = nn.Sequential(
+            self.squeeze,
             nn.Linear(nz, ngf * 4 * 4),
+            self.reshape,
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(ngf * 16, ngf * 16, 3, stride=1, padding=1),
+            nn.Conv2d(ngf, ngf * 16, 3, stride=1, padding=1),
             nn.BatchNorm2d(ngf * 16),
             nn.LeakyReLU(0.2, inplace=True),
-
-            nn.Upsample(scale_factor=2),
+            self.print,
+            # nn.Upsample(scale_factor=2),
             nn.Conv2d(ngf * 16, ngf * 8, 3, stride=1, padding=1),
             nn.BatchNorm2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
-
+            self.print,
             # state size. (ngf*8) x 4 x 4
             nn.Upsample(scale_factor=2),
             nn.Conv2d(ngf * 8, ngf * 4, 3, stride=1, padding=1),
             nn.BatchNorm2d(ngf * 4),
             nn.LeakyReLU(0.2, inplace=True),
-
+            self.print,
             # state size. (ngf*4) x 8 x 8
             nn.Upsample(scale_factor=2),
             nn.Conv2d(ngf * 4, ngf * 2, 3, stride=1, padding=1),
             nn.BatchNorm2d(ngf * 2),
             nn.LeakyReLU(0.2, inplace=True),
-
+            self.print,
             # state size. (ngf*2) x 16 x 16
             nn.Upsample(scale_factor=2),
             nn.Conv2d(ngf * 2, ngf, 3, stride=1, padding=1),
             nn.BatchNorm2d(ngf),
             nn.LeakyReLU(0.2, inplace=True),
-
+            self.print,
             # state size. (ngf) x 32 x 32
-            nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=bias),
+            nn.Conv2d(ngf, nc, 3,  stride=1, padding=1),
             nn.Tanh()
             # state size. (nc) x 64 x 64
         )
@@ -734,7 +762,6 @@ class DiscriminatorNetLessCheckerboardToCanonicalLeaky(nn.Module):
         self.net = nnrd.RelevanceNetAlternate(
             *layers
         )
-
 
 
 # ######################################## Smoothing layer ########################################
