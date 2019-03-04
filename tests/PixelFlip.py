@@ -34,6 +34,7 @@ parser.add_argument('--loadD', default='', help='path to discriminator')
 parser.add_argument('--ngpu', default=1, type=int)
 parser.add_argument('--outf', default='output', help='folder to output images and model checkpoints')
 parser.add_argument('--alpha', default=1)
+parser.add_argument('--num_images', default=1000, type=int)
 parser.add_argument('--dataset', help='mnist | anime | custom', required=True, choices=['mnist', 'anime', 'custom', 'ciphar10'])
 opt = parser.parse_args()
 ngpu = int(opt.ngpu)
@@ -127,15 +128,20 @@ p = 1
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
                                          shuffle=False, num_workers=2)
 
-discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=64, ngpu=ngpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
 dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
 discriminator.load_state_dict(dict, strict=False)
 discriminator.to(gpu)
 
+before_score = []
+after_score = []
+highest = False
 for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+    print('Image {}'.format(n_batch + 1))
     batch_data = batch_data.to(gpu)
     # batch_data = torch.zeros(batch_data.size()).fill_(1)
     # batch_data = utils.drawBoxes(batch_data, True, -1, ([[10, 30], [50, 40]], 1))
+    print_obj = n_batch == opt.num_images
 
     batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
     batch_data.requires_grad = True
@@ -146,6 +152,7 @@ for n_batch, (batch_data, _) in enumerate(dataloader, 0):
 
     flip = True
     test_result, test_prob = discriminator(batch_data, flip=flip)
+    before_score.append(test_prob.detach().item())
 
     test_relevance = discriminator.relprop(flip=flip)
     test_relevance = torch.sum(test_relevance, 1, keepdim=True)
@@ -153,16 +160,18 @@ for n_batch, (batch_data, _) in enumerate(dataloader, 0):
     test_relevance = test_relevance[:, :, p:-p, p:-p]
     batch_data = batch_data[:, :, p:-p, p:-p]
 
-    logger.save_heatmap_batch(images=batch_data, relevance=test_relevance, probability=test_prob, relu_result=test_result,
-                              num=n_batch)
+    if print_obj:
+        logger.save_heatmap_batch(images=batch_data, relevance=test_relevance, probability=test_prob, relu_result=test_result,
+                              num=n_batch * 2)
 
-    indices = get_indices(test_relevance, k=5, highest=False)
+    indices = get_indices(test_relevance, k=1, highest=highest)
 
     flipped_image = flip_pixels(batch_data, indices)
 
     flipped_image = F.pad(flipped_image, (p, p, p, p), value=-1)
 
     test_result, test_prob = discriminator(flipped_image, flip=flip)
+    after_score.append(test_prob.detach().item())
 
     test_relevance = discriminator.relprop(flip=flip)
     test_relevance = torch.sum(test_relevance, 1, keepdim=True)
@@ -170,7 +179,21 @@ for n_batch, (batch_data, _) in enumerate(dataloader, 0):
     test_relevance = test_relevance[:, :, p:-p, p:-p]
     flipped_image = flipped_image[:, :, p:-p, p:-p]
 
-    logger.save_heatmap_batch(images=flipped_image, relevance=test_relevance, probability=test_prob, relu_result=test_result,
-                              num=n_batch + 1)
+    if print_obj:
+        logger.save_heatmap_batch(images=flipped_image, relevance=test_relevance, probability=test_prob, relu_result=test_result,
+                              num=n_batch * 2 + 1)
 
-    break
+    if n_batch >= opt.num_images:
+        break
+
+
+before_score_mean = np.mean(before_score)
+after_score_mean = np.mean(after_score)
+if highest:
+    print('Before flipping highest pixels: {}'.format(before_score_mean))
+    print('After flipping highest pixels: {}'.format(after_score_mean))
+    print('Change of {}'.format(100 - (before_score_mean/after_score_mean * 100)))
+else:
+    print('Before flipping lowest pixels: {}'.format(before_score_mean))
+    print('After flipping lowest pixels: {}'.format(after_score_mean))
+    print('Change of {}%'.format(100 - (before_score_mean/after_score_mean * 100)))

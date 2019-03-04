@@ -49,7 +49,7 @@ class Logger:
         # TensorBoard
         self.writer = SummaryWriter(log_dir=self.log_subdir, comment=self.comment)
 
-    def log(self, d_error, g_error, epoch, n_batch, num_batches):
+    def log(self, d_error, g_error, epoch, n_batch, num_batches, d_real, d_fake_1, d_fake_2):
 
         # var_class = torch.Tensor
         # if type(d_error.data) == var_class:
@@ -62,6 +62,9 @@ class Logger:
             '{}/D_error'.format(self.comment), d_error, step)
         self.writer.add_scalar(
             '{}/G_error'.format(self.comment), g_error, step)
+        self.writer.add_scalar('{}/prediction_real'.format(self.comment), d_real, step)
+        self.writer.add_scalar('{}/prediction_fake_1'.format(self.comment), d_fake_1, step)
+        self.writer.add_scalar('{}/prediction_fake_2'.format(self.comment), d_fake_2, step)
 
     def log_images(self, images, relevance, num_images, epoch, n_batch, num_batches,
                    printdata, format='NCHW', normalize=True, noLabel=False):

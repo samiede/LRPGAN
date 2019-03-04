@@ -65,7 +65,7 @@ class Net(nn.Module):
         x = F.max_pool2d(x, 2, 2)
         x = F.relu(self.conv3(x))
         x = F.max_pool2d(x, 2, 2)
-        x = x.view(-1, 4 * 4 * 80)
+        x = x.view(-1, 4 * 4 * 100)
         x = F.relu(self.fc1(x))
         x = self.fc2(x)
         return x

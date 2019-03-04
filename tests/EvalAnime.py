@@ -32,7 +32,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--ngpu', type=int, default=1)
 parser.add_argument('--genfolder', required=True)
 parser.add_argument('--epochs', required=True)
-parser.add_argument('--num_images', default=100)
+parser.add_argument('--num_images', default=9)
 parser.add_argument('--outf')
 opt = parser.parse_args()
 
@@ -67,9 +67,10 @@ def loadGenerator(gen, dict):
 
 
 generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=opt.ngpu)
+# generator = dcgm.GeneratorNetLessCheckerboardUpsample(nc, ngf=128, ngpu=opt.ngpu)
 
-
-for epoch in range(int(opt.epochs)):
+start = 80
+for epoch in range(start, int(opt.epochs)):
     print('Evaluating epoch {}'.format(epoch))
     noise = torch.randn(opt.num_images, 100, 1, 1, device=gpu)
     dictpath = os.path.join(opt.genfolder, 'generator_epoch_{}.pth'.format(epoch))
@@ -82,7 +83,12 @@ for epoch in range(int(opt.epochs)):
 
     images = generator(noise)
 
-
-    vutils.save_image(images.detach(),
-                      '{}/fake_samples_epoch_{}.png'.format(outf, epoch),
-                      normalize=True, nrow=int(np.sqrt(opt.num_images)))
+    grid = vutils.make_grid(images.detach(), normalize=True, nrow=int(np.sqrt(opt.num_images)))
+    fig = plt.figure(figsize=(64, 64), facecolor='white')
+    plt.imshow(np.moveaxis(grid.numpy(), 0, -1))
+    ax = plt.axes()
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    plt.axis('off')
+    fig.savefig('{}/fake_samples_epoch_{}.pdf'.format(outf, epoch), dpi=100, bbox_inches='tight', pad_inches=0)
+    plt.close()

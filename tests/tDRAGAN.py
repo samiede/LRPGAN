@@ -121,7 +121,7 @@ else:
     pass
 
 
-nc = 3
+nc = 1
 
 assert dataset
 assert nc
@@ -138,15 +138,15 @@ if opt.loadG and not opt.external:
     # generator = dcgm.LRPGeneratorNet(nc, ngf=64, ngpu=ngpu)
     # generator = dcgm.Generator(nc, ngf=128, ngpu=ngpu)
 
-    generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=ngpu)
+    generator = dcgm.GeneratorNetLessCheckerboardUpsample(nc, ngf=128, ngpu=ngpu)
     dict = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
-    if torch.__version__ == '0.4.0':
-        del dict['net.1.num_batches_tracked']
-        del dict['net.4.num_batches_tracked']
-        del dict['net.7.num_batches_tracked']
-        del dict['net.10.num_batches_tracked']
-        del dict['net.13.num_batches_tracked']
-    generator.load_state_dict(dict)
+    # if torch.__version__ == '0.4.0':
+        # del dict['net.1.num_batches_tracked']
+        # del dict['net.4.num_batches_tracked']
+        # del dict['net.7.num_batches_tracked']
+        # del dict['net.10.num_batches_tracked']
+        # del dict['net.13.num_batches_tracked']
+    generator.load_state_dict(dict, strict=False)
     generator.to(gpu)
     generator.eval()
 
@@ -156,11 +156,11 @@ if opt.loadG and not opt.external:
 
     images = generator(noise)
 
-    logger.save_image_batch(images, num=None)
+    # logger.save_image_batch(images, num=None)
 
-    # vutils.save_image(images.detach(),
-    #                   '{}/{}/{}/fake_samples_epoch_{}.png'.format(outf, opt.dataset, 'generated', epoch),
-    #                   normalize=True, nrow=int(np.sqrt(opt.num_images)))
+    vutils.save_image(images.detach(),
+                      '{}/{}/{}/fake_samples_epoch_{}.png'.format(outf, opt.dataset, 'generated', epoch),
+                      normalize=True, nrow=int(np.sqrt(opt.num_images)))
 
 # if we want to discriminate stuff
 if opt.loadD and not opt.external:
@@ -171,9 +171,13 @@ if opt.loadD and not opt.external:
     # discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
-    discriminator.load_state_dict(dict, strict=False)
+    if torch.__version__ == '0.4.0':
+        del dict['net.1.bn2.num_batches_tracked']
+        del dict['net.2.bn3.num_batches_tracked']
+        del dict['net.3.bn4.num_batches_tracked']
+        del dict['net.4.bn5.num_batches_tracked']
+    discriminator.load_state_dict(dict)
     discriminator.to(gpu)
-
 
     def batchPrint(m):
         classname = m.__class__.__name__
@@ -204,7 +208,7 @@ if opt.loadD and not opt.external:
         # batch_data = utils.drawBoxes(batch_data.size(0), batch_data.size(1), opt.imageSize, -1, ([[10, 30], [50, 40]], 1))
         # ##############################################################################################
 
-        batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
+        batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate')
         batch_data.requires_grad = True
 
         if opt.num_images and n_batch >= opt.num_images:
@@ -222,8 +226,10 @@ if opt.loadD and not opt.external:
         #     batch_data = batch_data.repeat(1, 3, 1, 1)
         flip = True
         test_result, test_prob = discriminator(batch_data, flip=flip)
+        # test_prob = discriminator(batch_data, flip=flip)
         print('Discriminating image no. {}: {}'.format(n_batch, test_prob.item()))
-
+        # print('Discriminating image no. {}: {}'.format(n_batch, test_prob.mean().item()))
+        # exit()
         test_relevance = discriminator.relprop(flip=flip)
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
         # test_sensivity = torch.autograd.grad(test_result, batch_data)[0].pw(2)

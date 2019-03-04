@@ -299,7 +299,7 @@ for epoch in range(opt.epochs):
         discriminator.zero_grad()
         real_data = batch_data.to(gpu)
         real_test = real_data[0].clone().unsqueeze(0)
-        
+
         real_data = F.pad(real_data, (p, p, p, p), mode='replicate')
         label_real = soft_real_label(batch_size).to(gpu)
 
@@ -335,7 +335,7 @@ for epoch in range(opt.epochs):
 
         if opt.gp:
             grad_alpha = torch.rand(batch_size, nc, 1, 1).expand(real_data.size())
-            x_gp = torch.tensor(grad_alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
+            x_gp = torch.Tensor(grad_alpha * real_data.data + (1 - grad_alpha) * (real_data.data + 0.5 * real_data.data.std() * torch.rand(real_data.size())),
                                 requires_grad=True)
             pred_hat = discriminator(x_gp)
             gradients = torch.autograd.grad(outputs=pred_hat, inputs=x_gp, grad_outputs=torch.ones(pred_hat.size()),
@@ -370,7 +370,7 @@ for epoch in range(opt.epochs):
         if not opt.freezeG or (opt.freezeG and epoch <= freezeEpochs):
             g_optimizer.step()
 
-        logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader))
+        logger.log(d_error_total, g_err, epoch, n_batch, len(dataloader), d_real, d_fake_1, d_fake_2)
 
         if n_batch % 10 == 0:
             print('[%d/%d][%d/%d] Loss_D: %.4f Loss_G: %.4f D(x): %.4f D(G(z)): %.4f / %.4f'
