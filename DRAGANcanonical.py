@@ -403,6 +403,7 @@ for epoch in range(opt.epochs):
 
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
+            real_doublecheck_prop = discriminator(real_test)
             real_test_relevance = canonical.relprop()
             del canonical
 
@@ -416,7 +417,7 @@ for epoch in range(opt.epochs):
                 (test_relevance[:, :, bp:-bp, bp:-bp], real_test_relevance[:, :, bp:-bp, bp:-bp]))
 
             printdata = {'test_prob': test_prob.item(), 'real_test_prob': real_test_prob.item(),
-                         'test_result': test_result.item(), 'real_test_result': real_test_result.item(),
+                         'test_result': test_result.item(), 'real_test_result': real_doublecheck_prop.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
 
