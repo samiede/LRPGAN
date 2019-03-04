@@ -397,7 +397,7 @@ for epoch in range(opt.epochs):
             test_result, test_prob = canonical(test_fake)
             fake_double_check = discriminator(test_fake)
             discriminator.eval()
-            fake_tripple_check = discriminator(test_fake)
+            _, fake_tripple_check = discriminator(test_fake)
 
             test_relevance = canonical.relprop()
 
@@ -408,7 +408,7 @@ for epoch in range(opt.epochs):
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
             real_doublecheck_prop = discriminator(real_test)
-            real_tripplecheck_prop = discriminator(real_test)
+            _, real_tripplecheck_prop = discriminator(real_test)
             discriminator.train()
             real_test_relevance = canonical.relprop()
             del canonical
