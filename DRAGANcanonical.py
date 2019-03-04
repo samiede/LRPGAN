@@ -396,6 +396,9 @@ for epoch in range(opt.epochs):
 
             test_result, test_prob = canonical(test_fake)
             fake_double_check = discriminator(test_fake)
+            discriminator.eval()
+            fake_tripple_check = discriminator(test_fake)
+
             test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
@@ -405,6 +408,8 @@ for epoch in range(opt.epochs):
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
             real_doublecheck_prop = discriminator(real_test)
+            real_tripplecheck_prop = discriminator(real_test)
+            discriminator.train()
             real_test_relevance = canonical.relprop()
             del canonical
 
@@ -419,8 +424,10 @@ for epoch in range(opt.epochs):
 
             printdata = {'test_prob': test_prob.item(), 'real_test_prob': real_test_prob.item(),
                          'test_result': fake_double_check.item(), 'real_test_result': real_doublecheck_prop.item(),
-                         'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
-                         'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
+                         # 'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
+                         'min_test_rel': fake_tripple_check, 'max_test_rel': torch.max(test_relevance),
+                         # 'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
+                         'min_real_rel': real_tripplecheck_prop, 'max_real_rel': torch.max(real_test_relevance)}
 
             if not opt.cont:
                 log_epoch = epoch
