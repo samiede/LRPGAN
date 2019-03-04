@@ -395,6 +395,7 @@ for epoch in range(opt.epochs):
                 canonical.setngpu(1)
 
             test_result, test_prob = canonical(test_fake)
+            fake_double_check = discriminator(test_fake)
             test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
@@ -417,7 +418,7 @@ for epoch in range(opt.epochs):
                 (test_relevance[:, :, bp:-bp, bp:-bp], real_test_relevance[:, :, bp:-bp, bp:-bp]))
 
             printdata = {'test_prob': test_prob.item(), 'real_test_prob': real_test_prob.item(),
-                         'test_result': test_result.item(), 'real_test_result': real_doublecheck_prop.item(),
+                         'test_result': fake_double_check.item(), 'real_test_result': real_doublecheck_prop.item(),
                          'min_test_rel': torch.min(test_relevance), 'max_test_rel': torch.max(test_relevance),
                          'min_real_rel': torch.min(real_test_relevance), 'max_real_rel': torch.max(real_test_relevance)}
 
