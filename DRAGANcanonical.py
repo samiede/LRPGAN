@@ -386,8 +386,8 @@ for epoch in range(opt.epochs):
             # clone network to remove batch norm for relevance propagation
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
-            canonical.passBatchNormParametersToConvolution()
-            canonical.removeBatchNormLayers()
+            # canonical.passBatchNormParametersToConvolution()
+            # canonical.removeBatchNormLayers()
             canonical.eval()
 
             # set ngpu to one, so relevance propagation works
@@ -395,11 +395,10 @@ for epoch in range(opt.epochs):
                 canonical.setngpu(1)
 
             test_result, test_prob = canonical(test_fake)
-            fake_double_check = discriminator(test_fake)
             discriminator.eval()
             _, fake_tripple_check = discriminator(test_fake)
             discriminator.train()
-
+            fake_double_check = discriminator(test_fake)
             test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
@@ -408,10 +407,10 @@ for epoch in range(opt.epochs):
 
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
-            real_doublecheck_prop = discriminator(real_test)
             discriminator.eval()
             _, real_tripplecheck_prop = discriminator(real_test)
             discriminator.train()
+            real_doublecheck_prop = discriminator(real_test)
             real_test_relevance = canonical.relprop()
             del canonical
 
