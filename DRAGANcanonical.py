@@ -54,6 +54,7 @@ parser.add_argument('--cont', help='Continue training -> Does not delete dir', d
 parser.add_argument('--split', help='Split dataset in training and test set', action='store_true')
 parser.add_argument('--comment', help='Comment to add to run parameter file', default='', required=True)
 parser.add_argument('--add_noise', help='Use additive noise to stabilize trainint', action='store_true')
+parser.add_argument('--imgcat', action='store_true')
 
 opt = parser.parse_args()
 outf = '{}/{}/{}_{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[0], opt.dataset, opt.comment)
@@ -386,8 +387,8 @@ for epoch in range(opt.epochs):
             # clone network to remove batch norm for relevance propagation
             canonical = type(discriminator)(nc, ndf, alpha, ngpu)
             canonical.load_state_dict(discriminator.state_dict())
-            # canonical.passBatchNormParametersToConvolution()
-            # canonical.removeBatchNormLayers()
+            canonical.passBatchNormParametersToConvolution()
+            canonical.removeBatchNormLayers()
             canonical.eval()
 
             # set ngpu to one, so relevance propagation works
@@ -395,10 +396,11 @@ for epoch in range(opt.epochs):
                 canonical.setngpu(1)
 
             test_result, test_prob = canonical(test_fake)
+            fake_double_check = discriminator(test_fake)
             discriminator.eval()
             _, fake_tripple_check = discriminator(test_fake)
             discriminator.train()
-            fake_double_check = discriminator(test_fake)
+
             test_relevance = canonical.relprop()
 
             # Relevance propagation on real image
@@ -407,10 +409,10 @@ for epoch in range(opt.epochs):
 
             real_test.requires_grad = True
             real_test_result, real_test_prob = canonical(real_test)
+            real_doublecheck_prop = discriminator(real_test)
             discriminator.eval()
             _, real_tripplecheck_prop = discriminator(real_test)
             discriminator.train()
-            real_doublecheck_prop = discriminator(real_test)
             real_test_relevance = canonical.relprop()
             del canonical
 
@@ -442,9 +444,10 @@ for epoch in range(opt.epochs):
 
 
             # show images inline
-            # comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
-            # subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
-            #                  outf + '/' + opt.dataset + '/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
+            if opt.imgcat:
+                comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
+                subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
+                                outf + '/' + opt.dataset + '/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)
@@ -454,3 +457,10 @@ for epoch in range(opt.epochs):
     # do checkpointing
     torch.save(generator.state_dict(), '%s/generator_epoch_{}.pth'.format(str(log_epoch)) % (checkpointdir))
     torch.save(discriminator.state_dict(), '%s/discriminator_epoch_{}.pth'.format(str(log_epoch)) % (checkpointdir))
+
+    dic_compare = torch.load('%s/discriminator_epoch_{}.pth'.format(str(log_epoch)) % (checkpointdir),
+                             map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    for i, j in zip(dic_compare.items(), discriminator.state_dict().items()):
+        if i != j:
+            print('Something is not right!')
