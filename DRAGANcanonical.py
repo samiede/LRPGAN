@@ -143,7 +143,6 @@ elif opt.dataset == 'portrait':
 else:
     pass
 
-
 assert dataset
 
 if opt.split:
@@ -290,7 +289,6 @@ for epoch in range(opt.epochs):
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_size = batch_data.size(0)
         add_noise_var = adjust_variance(add_noise_var, initial_additive_noise_var, opt.epochs * len(dataloader) * 1 / 4)
-
 
         ############################
         # Train Discriminator
@@ -442,12 +440,11 @@ for epoch in range(opt.epochs):
                 log_epoch, n_batch, len(dataloader), printdata, noLabel=opt.nolabel
             )
 
-
             # show images inline
             if opt.imgcat:
                 comment = '{:.4f}-{:.4f}'.format(printdata['test_prob'], printdata['real_test_prob'])
                 subprocess.call([os.path.expanduser('~/.iterm2/imgcat'),
-                                outf + '/' + opt.dataset + '/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
+                                 outf + '/' + opt.dataset + '/epoch_' + str(epoch) + '_batch_' + str(n_batch) + '_' + comment + '.png'])
 
             status = logger.display_status(epoch, opt.epochs, n_batch, len(dataloader), d_error_total, g_err,
                                            prediction_real, prediction_fake)
@@ -462,5 +459,5 @@ for epoch in range(opt.epochs):
                              map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
 
     for i, j in zip(dic_compare.items(), discriminator.state_dict().items()):
-        if i != j:
+        if not torch.allclose(i[1], j[1]):
             print('Something is not right!')
