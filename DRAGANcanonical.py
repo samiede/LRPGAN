@@ -458,6 +458,19 @@ for epoch in range(opt.epochs):
     dic_compare = torch.load('%s/discriminator_epoch_{}.pth'.format(str(log_epoch)) % (checkpointdir),
                              map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    for i, j in zip(dic_compare.items(), discriminator.state_dict().items()):
-        if not torch.allclose(i[1], j[1]):
-            print('Something is not right!')
+
+    def compare_models(dict1, dict2):
+        models_differ = 0
+        for key_item_1, key_item_2 in zip(dict1.items(), dict2.items()):
+            if torch.equal(key_item_1[1], key_item_2[1]):
+                pass
+            else:
+                models_differ += 1
+                if (key_item_1[0] == key_item_2[0]):
+                    print('Mismtach found at', key_item_1[0])
+                else:
+                    raise Exception
+        if models_differ == 0:
+            print('Models match perfectly! :)')
+
+    compare_models(discriminator.state_dict(), dic_compare)
