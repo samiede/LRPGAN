@@ -164,12 +164,16 @@ flip = True
 all_before_scores = []
 all_after_scores = []
 highest = opt.highest
+if ngpu > 1:
+    discriminator.setngpu(1)
+    
 for percent in range(0, opt.p):
     before_score = []
     after_score = []
     percentile = percent/100
     k = int(64 * 64 * percentile)
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+        discriminator.to(gpu)
         print('Image {}'.format(n_batch + 1))
         batch_data = batch_data.to(gpu)
         print_obj = n_batch == opt.num_images
@@ -179,6 +183,7 @@ for percent in range(0, opt.p):
 
         test_result, test_prob = discriminator(batch_data, flip=flip)
         before_score.append(test_prob.detach().item())
+
 
         test_relevance = discriminator.relprop(flip=flip)
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
