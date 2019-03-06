@@ -150,7 +150,7 @@ if torch.cuda.is_available():
 #     batch_data = F.pad(batch_data, (p, p, p, p), value=-1)
 #     _ = discriminator(batch_data)
 #
-
+ print('Stabilizing batch norm')
 dataloader_iter = iter(dataloader)
 for i in range(0, 30):
     print(i)
