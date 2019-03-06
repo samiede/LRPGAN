@@ -129,6 +129,13 @@ def flip_pixels(batch_data, indices):
     return data
 
 
+def eps_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Eps') != -1:
+        m.epsilon = 1e-9
+
+
+
 # Create Logger instance
 logger = Logger(model_name='LRPGAN', data_name=opt.dataset, dir_name=outf, make_fresh=False)
 print('Created Logger')
@@ -137,12 +144,14 @@ p = 1
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=64,
                                          shuffle=False, num_workers=0)
 
-discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonicalAB(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
 dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
 discriminator.load_state_dict(dict, strict=False)
 discriminator = discriminator.to(gpu)
 if torch.cuda.is_available():
     discriminator.cuda()
+
+discriminator.apply(eps_init)
 
 # print('Stabilizing batch norm')
 # for n_batch, (batch_data, _) in enumerate(dataloader, 0):
