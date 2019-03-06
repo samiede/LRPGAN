@@ -36,7 +36,7 @@ parser.add_argument('--outf', default='output')
 parser.add_argument('--batch_size', default=128)
 parser.add_argument('--filename', required=True)
 parser.add_argument('--dataset', required=True)
-parser.add_argument('--ngpu', type=int)
+parser.add_argument(--'epochs', default=100, type=int)
 opt = parser.parse_args()
 
 random.seed(1234)
