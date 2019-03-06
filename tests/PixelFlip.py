@@ -189,6 +189,11 @@ for percent in range(0, opt.p):
         test_result, test_prob = discriminator(batch_data, flip=flip)
         before_score.append(test_prob.detach().item())
 
+        if test_prob.detach().item() > 0.5:
+            flip = False
+        else:
+            flip = True
+
         test_relevance = discriminator.relprop(flip=flip)
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
@@ -210,6 +215,11 @@ for percent in range(0, opt.p):
 
         test_result, test_prob = discriminator(flipped_image, flip=flip)
         after_score.append(test_prob.detach().item())
+
+        if test_prob.detach().item() > 0.5:
+            flip = False
+        else:
+            flip = True
 
         test_relevance = discriminator.relprop(flip=flip)
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
