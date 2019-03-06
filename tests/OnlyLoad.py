@@ -13,7 +13,7 @@ parser.add_argument('--loadG', default=None, help='path to discriminator')
 opt = parser.parse_args()
 
 out_dir = '../dataset/MNIST'
-dataset = datasets.MNIST(root=out_dir, train=True, download=True,
+dataset = datasets.MNIST(root=out_dir, train=False, download=True,
                          transform=transforms.Compose(
                              [
                                  transforms.Resize(64),
