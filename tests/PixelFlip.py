@@ -197,7 +197,7 @@ for percent in range(0, opt.p):
 
         if print_obj:
             logger.save_heatmap_batch(images=batch_data, relevance=test_relevance, probability=test_prob, relu_result=test_result,
-                                      num='{}_{}'.format(n_batch * 2, k))
+                                      num='{}_{}_{}'.format('before', percentile, highest))
 
         if k > 0:
             indices = get_indices(test_relevance, k=k, highest=highest)
@@ -219,7 +219,7 @@ for percent in range(0, opt.p):
 
         if print_obj:
             logger.save_heatmap_batch(images=flipped_image, relevance=test_relevance, probability=test_prob, relu_result=test_result,
-                                      num='{}_{}'.format(n_batch * 2 + 1, k))
+                                      num='{}_{}_{}'.format('after', percentile, highest))
 
         if n_batch >= opt.num_images:
             break
