@@ -190,11 +190,11 @@ for percent in range(0, opt.p):
         before_score.append(test_prob.detach().item())
 
         if test_prob.detach().item() > 0.5:
-            flip = False
+            test_result, test_prob = discriminator(batch_data, flip=False)
+            test_relevance = discriminator.relprop(flip=False)
         else:
-            flip = True
+            test_relevance = discriminator.relprop(flip=flip)
 
-        test_relevance = discriminator.relprop(flip=flip)
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
         test_relevance = test_relevance[:, :, p:-p, p:-p]
@@ -217,11 +217,11 @@ for percent in range(0, opt.p):
         after_score.append(test_prob.detach().item())
 
         if test_prob.detach().item() > 0.5:
-            flip = False
+            test_result, test_prob = discriminator(batch_data, flip=False)
+            test_relevance = discriminator.relprop(flip=False)
         else:
-            flip = True
+            test_relevance = discriminator.relprop(flip=flip)
 
-        test_relevance = discriminator.relprop(flip=flip)
         test_relevance = torch.sum(test_relevance, 1, keepdim=True)
 
         test_relevance = test_relevance[:, :, p:-p, p:-p]
