@@ -135,7 +135,7 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=64,
 discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonicalAB(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
 dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
 discriminator.load_state_dict(dict, strict=False)
-discriminator.to(gpu)
+discriminator = discriminator.to(gpu)
 
 # print('Stabilizing batch norm')
 # for n_batch, (batch_data, _) in enumerate(dataloader, 0):
@@ -229,7 +229,7 @@ for percent in range(0, opt.p):
 
     all_before_scores.append(before_score_mean)
     all_after_scores.append(after_score_mean)
-    
+
     text_file = open("{}/{}_highest_{}.txt".format(outf, opt.filename, opt.highest), "a+")
     text_file.write(f'{k} {before_score_mean} {after_score_mean}\n')
     text_file.close()
