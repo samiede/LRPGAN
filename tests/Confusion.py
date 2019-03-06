@@ -120,9 +120,9 @@ def loadDiscriminator(discr, dict):
     return discriminator
 
 
-# generator = dcgm.GeneratorNetLessCheckerboardUpsample(nc, ngf=128, ngpu=opt.ngpu)
-generator = dcgm.GeneratorNetLessCheckerboard(nc=nc, ngf=128, ngpu=opt.ngpu)
-discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=2, ndf=128, ngpu=opt.ngpu)
+generator = dcgm.GeneratorNetLessCheckerboardUpsample(nc, ngf=ngf, ngpu=opt.ngpu)
+# generator = dcgm.GeneratorNetLessCheckerboard(nc=nc, ngf=128, ngpu=opt.ngpu)
+discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=alpha, ndf=ndf, ngpu=opt.ngpu)
 
 for epoch in range(int(opt.epochs)):
     print('Evaluating epoch {}'.format(epoch))
