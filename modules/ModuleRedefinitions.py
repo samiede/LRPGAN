@@ -31,16 +31,12 @@ class FirstConvolution(nn.Conv2d):
 
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                iself.cuda()
             iself.X = self.X.clone()
 
             iself.weight.data = iself.weight * (gamma / var).reshape(iself.out_channels, 1, 1, 1)
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                nself.cuda()
             nself.X = self.X.clone()
 
             nself.weight.data = nself.weight * (gamma / var).reshape(nself.out_channels, 1, 1, 1)
@@ -48,8 +44,6 @@ class FirstConvolution(nn.Conv2d):
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                pself.cuda()
             pself.X = self.X.clone()
 
             pself.weight.data = pself.weight * (gamma / var).reshape(pself.out_channels, 1, 1, 1)
@@ -77,23 +71,17 @@ class FirstConvolution(nn.Conv2d):
 
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             iself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                iself.cuda()
             iself.X = self.X.clone()
             # iself.bias.data *= 0
 
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             nself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                nself.cuda()
             nself.X = self.X.clone()
             # nself.bias.data *= 0
             nself.weight.data = torch.min(torch.Tensor(1).zero_(), nself.weight)
 
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.stride, self.padding)
             pself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                pself.cuda()
             pself.X = self.X.clone()
             # pself.bias.data *= 0
             pself.weight.data = torch.max(torch.Tensor(1).zero_(), pself.weight)
@@ -150,8 +138,6 @@ class NextConvolution(nn.Conv2d):
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             pself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                pself.cuda()
             pself.X = self.X.clone()
             pself.alpha = self.alpha
             pself.bias.data = torch.max(torch.Tensor(1).zero_(), pself.bias)
@@ -162,8 +148,6 @@ class NextConvolution(nn.Conv2d):
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             nself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                nself.cuda()
             nself.X = self.X.clone()
             nself.beta = self.beta
             nself.bias.data = torch.min(torch.Tensor(1).zero_(), nself.bias)
@@ -189,8 +173,6 @@ class NextConvolution(nn.Conv2d):
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             pself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                pself.cuda()
             pself.X = self.X.clone()
             pself.alpha = self.alpha
             pself.bias.data = torch.max(torch.Tensor(1).zero_(), pself.bias)
@@ -200,8 +182,6 @@ class NextConvolution(nn.Conv2d):
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             nself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                nself.cuda()
             nself.X = self.X.clone()
             nself.beta = self.beta
             nself.bias.data = torch.min(torch.Tensor(1).zero_(), nself.bias)
@@ -220,7 +200,7 @@ class NextConvolution(nn.Conv2d):
             C = torch.autograd.grad(ZA, pX, SA)[0] + torch.autograd.grad(ZB, nX, SB)[0]
             R = pX * C
 
-        # utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
+        utils.Logger.save_intermediate_heatmap(torch.sum(R, 1, keepdim=True).detach(), self.name)
         # print('Layer {}: {}'.format(self.name, R.abs().sum().item()))
         return R
 
@@ -284,8 +264,6 @@ class LastConvolution(nn.Conv2d):
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             pself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                pself.cuda()
             if flip:
                 pself.weight.data *= -1
                 pself.bias.data *= -1
@@ -300,8 +278,6 @@ class LastConvolution(nn.Conv2d):
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             nself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                nself.cuda()
             if flip:
                 nself.weight.data *= -1
                 nself.bias.data *= -1
@@ -330,8 +306,6 @@ class LastConvolution(nn.Conv2d):
             pself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             pself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                pself.cuda()
             if flip:
                 pself.weight.data *= -1
                 pself.bias.data *= -1
@@ -345,8 +319,6 @@ class LastConvolution(nn.Conv2d):
             nself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             nself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                nself.cuda()
             if flip:
                 nself.weight.data *= -1
                 nself.bias.data *= -1
@@ -421,8 +393,6 @@ class NextConvolutionEps(nn.Conv2d):
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             iself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                iself.cuda()
             iself.X = self.X.clone()
             iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
                                 * var.unsqueeze(1).view(-1, 1, 1, 1).expand_as(iself.weight)
@@ -442,8 +412,6 @@ class NextConvolutionEps(nn.Conv2d):
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             iself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                iself.cuda()
             iself.X = self.X.clone()
 
             iX = torch.tensor(iself.X.data, requires_grad=True)
@@ -528,8 +496,6 @@ class LastConvolutionEps(nn.Conv2d):
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             iself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                iself.cuda()
             iself.X = self.X.clone()
             # iself.bias.data *= 0
             iself.weight.data = iself.weight.data * gamma.view(-1, 1, 1, 1).expand_as(iself.weight) \
@@ -565,8 +531,6 @@ class LastConvolutionEps(nn.Conv2d):
             iself = type(self)(self.in_channels, self.out_channels, self.kernel_size, self.name, self.stride,
                                self.padding)
             iself.load_state_dict(self.state_dict())
-            if torch.cuda.is_available():
-                iself.cuda()
             iself.X = self.X.clone()
 
             if flip:
