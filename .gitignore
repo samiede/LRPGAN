@@ -5,3 +5,5 @@ __pycache__
 Previous\ Runs/
 utils/portrait/
 tests/output/
+Upsampling\ Runs
+mnist_mnist\ freeze\ G/

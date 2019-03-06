@@ -48,7 +48,7 @@ outf = '{}/{}'.format(opt.outf, os.path.splitext(os.path.basename(sys.argv[0]))[
 ngpu = int(opt.ngpu)
 nz = int(opt.nz)
 print(opt)
-padding = 2
+padding = 1
 p = padding
 
 try:
@@ -148,7 +148,7 @@ if opt.loadG and not opt.external:
         # del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict, strict=False)
     generator.to(gpu)
-    generator.eval()
+    # generator.eval()
 
     epoch = 10
 
@@ -170,30 +170,49 @@ if opt.loadD and not opt.external:
 
     # discriminator = dcgm.LRPDiscriminatorNet(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
     discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
-    dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+    dict_d = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+    # print(dict)
+    # exit()
     if torch.__version__ == '0.4.0':
-        del dict['net.1.bn2.num_batches_tracked']
-        del dict['net.2.bn3.num_batches_tracked']
-        del dict['net.3.bn4.num_batches_tracked']
-        del dict['net.4.bn5.num_batches_tracked']
-    discriminator.load_state_dict(dict)
+        del dict_d['net.1.bn2.num_batches_tracked']
+        del dict_d['net.2.bn3.num_batches_tracked']
+        del dict_d['net.3.bn4.num_batches_tracked']
+        del dict_d['net.4.bn5.num_batches_tracked']
+    discriminator.load_state_dict(dict_d)
     discriminator.to(gpu)
+    # print(discriminator)
 
     def batchPrint(m):
         classname = m.__class__.__name__
         if classname.find('BatchNorm') != -1:
             print('Batch norm mean weights: {}, mean bias: {}'.format(m.weight.mean(), m.bias.mean()))
+            print('Batch norm running var : {}, running mean: {}'.format(m.running_var.mean(), m.running_mean.mean()))
 
     def biasPrint(m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1 and m.bias is not None:
             print('{} mean weights: {}, mean bias: {}'.format(m.name, m.weight.mean(), m.bias.mean()))
 
-    discriminator.apply(biasPrint)
+    discriminator.apply(batchPrint)
 
     if opt.eps_init:
         assert discriminator
         discriminator.apply(eps_init)
+
+
+    # for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+    #     print('Stabilizing batch norm {}/{}'.format(n_batch, int(len(dataloader)/8)))
+    #     batch_data = batch_data.to(gpu)
+    #     batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate')
+    #     _ = discriminator(batch_data)
+    #
+    #     if n_batch == int(len(dataloader) / 8):
+    #         break
+
+    discriminator.apply(batchPrint)
+
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
+                                             shuffle=False, num_workers=2)
 
     for n_batch, (batch_data, _) in enumerate(dataloader, 0):
         batch_data = batch_data.to(gpu)
@@ -214,9 +233,9 @@ if opt.loadD and not opt.external:
         if opt.num_images and n_batch >= opt.num_images:
             break
 
-        discriminator.passBatchNormParametersToConvolution()
-        discriminator.removeBatchNormLayers()
-        discriminator.eval()
+        # discriminator.passBatchNormParametersToConvolution()
+        # discriminator.removeBatchNormLayers()
+        # discriminator.eval()
 
         if (opt.ngpu > 1):
             discriminator.setngpu(1)
@@ -225,20 +244,24 @@ if opt.loadD and not opt.external:
         # if batch_data.size(1) == 1:
         #     batch_data = batch_data.repeat(1, 3, 1, 1)
         flip = True
-        test_result, test_prob = discriminator(batch_data, flip=flip)
-        # test_prob = discriminator(batch_data, flip=flip)
-        print('Discriminating image no. {}: {}'.format(n_batch, test_prob.item()))
-        # print('Discriminating image no. {}: {}'.format(n_batch, test_prob.mean().item()))
-        # exit()
-        test_relevance = discriminator.relprop(flip=flip)
-        test_relevance = torch.sum(test_relevance, 1, keepdim=True)
+        # test_result, test_prob = discriminator(batch_data, flip=flip)
+        test_prob = discriminator(batch_data, flip=flip)
+        # print('Discriminating image no. {}: {}'.format(n_batch, test_prob[0].item()))
+        print('Discriminating image no. {}: {}'.format(n_batch, test_prob.mean().item()))
+        # test_relevance = discriminator.relprop(flip=flip)
+        # test_relevance = torch.sum(test_relevance, 1, keepdim=True)
         # test_sensivity = torch.autograd.grad(test_result, batch_data)[0].pw(2)
+        #
+        # test_relevance = test_relevance[:, :, p:-p, p:-p]
+        # batch_data = batch_data[:, :, p:-p, p:-p]
+        #
+        # logger.save_heatmap_batch(images=batch_data, relevance=test_relevance, probability=test_prob, relu_result=test_result,
+        #                           num=n_batch)
 
-        test_relevance = test_relevance[:, :, p:-p, p:-p]
-        batch_data = batch_data[:, :, p:-p, p:-p]
 
-        logger.save_heatmap_batch(images=batch_data, relevance=test_relevance, probability=test_prob, relu_result=test_result,
-                                  num=n_batch)
+
+
+
 
 if opt.loadD and opt.external:
 

@@ -30,11 +30,13 @@ import utils.ciphar10 as ciphar10
 # add parameters
 parser = argparse.ArgumentParser()
 parser.add_argument('--ngpu', type=int, default=1)
-parser.add_argument('--loadD', required=True)
-parser.add_argument('--loadG', required=True)
+parser.add_argument('--genfolder_d', required=True)
+parser.add_argument('--genfolder_g', required=True)
 parser.add_argument('--outf', default='output')
 parser.add_argument('--batch_size', default=128)
 parser.add_argument('--filename', required=True)
+parser.add_argument('--dataset', required=True)
+parser.add_argument('--ngpu', type=int)
 opt = parser.parse_args()
 
 random.seed(1234)
@@ -45,7 +47,6 @@ cudnn.benchmark = True
 gpu = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 torch.set_default_dtype(torch.float32)
 outf = '{}/{}/{}'.format('../output', os.path.splitext(os.path.basename(sys.argv[0]))[0], opt.outf)
-nc = 3
 
 try:
     os.makedirs(outf)
@@ -53,24 +54,46 @@ except OSError as e:
     if e.errno != errno.EEXIST:
         raise
 
-root_dir = '../dataset/faces'
-dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
-    [
-        transforms.Resize((64, 64)),
-        # transforms.Grayscale(num_output_channels=1),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ]
-))
-nc = 3
+text_file = open("{}/{}.txt".format(outf, opt.filename), "w+")
+text_file.write('TP, FN, FP, TN \n')
+text_file.close()
 
-idx_train = np.arange(0, int(len(dataset) * 0.8) + 1, 1)
-idx_test = np.arange(int(len(dataset) * 0.8) + 1, len(dataset), 1)
-trainingset = torch.utils.data.dataset.Subset(dataset, idx_train)
-test_set = torch.utils.data.dataset.Subset(dataset, idx_test)
-dataset = test_set
+if opt.dataset == 'mnist':
+    out_dir = '../dataset/MNIST'
+    dataset = datasets.MNIST(root=out_dir, train=True, download=True,
+                             transform=transforms.Compose(
+                                 [
+                                     transforms.Resize(64),
+                                     transforms.ToTensor(),
+                                     transforms.Normalize((0.5,), (0.5,)),
+                                 ]
+                             ))
+    nc = 1
 
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=128,
+if opt.dataset == 'anime':
+    root_dir = '../dataset/faces'
+    dataset = datasets.ImageFolder(root=root_dir, transform=transforms.Compose(
+        [
+            transforms.Resize((64, 64)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        ]
+    ))
+    nc = 3
+    idx_train = np.arange(0, int(len(dataset) * 0.8) + 1, 1)
+    idx_test = np.arange(int(len(dataset) * 0.8) + 1, len(dataset), 1)
+    trainingset = torch.utils.data.dataset.Subset(dataset, idx_train)
+    test_set = torch.utils.data.dataset.Subset(dataset, idx_test)
+    dataset = test_set
+
+ndf = 128
+ngf = 128
+alpha = 1
+ngpu = opt.ngpu
+p = 1
+batch_size = 64
+
+dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                          shuffle=True, num_workers=0)
 
 
@@ -94,77 +117,68 @@ def loadDiscriminator(discr, dict):
         del dict['net.4.bn5.num_batches_tracked']
     discriminator.load_state_dict(dict)
     discriminator.to(gpu)
-    discriminator.passBatchNormParametersToConvolution()
-    discriminator.removeBatchNormLayers()
     return discriminator
 
 
 # generator = dcgm.GeneratorNetLessCheckerboardUpsample(nc, ngf=128, ngpu=opt.ngpu)
-generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=opt.ngpu)
+generator = dcgm.GeneratorNetLessCheckerboard(nc=nc, ngf=128, ngpu=opt.ngpu)
 discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=2, ndf=128, ngpu=opt.ngpu)
 
-dict_d = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
-dict_g = torch.load(opt.loadG, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+for epoch in range(int(opt.epochs)):
+    print('Evaluating epoch {}'.format(epoch))
 
-discriminator = loadDiscriminator(discriminator, dict_d)
-generator = loadGenerator(generator, dict_g)
+    dictpath_g = os.path.join(opt.genfolder_g, 'generator_epoch_{}.pth'.format(epoch))
+    dictpath_d = os.path.join(opt.genfolder_d, 'discriminator_epoch_{}.pth'.format(epoch))
 
-true_positive = 0
-false_negative = 0
+    dict_d = torch.load(dictpath_d, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
+    dict_g = torch.load(dictpath_g, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
 
-p = 1
-for n_batch, (batch_data, _) in enumerate(dataloader, 0):
-    batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate').to(gpu)
-    _ = discriminator(batch_data)
+    discriminator = loadDiscriminator(discriminator, dict_d)
+    generator = loadGenerator(generator, dict_g)
 
-for i in range(0, len(dataloader)):
-    noise = torch.randn(int(opt.batch_size), 100, 1, 1, device=gpu)
-    _ = generator(noise)
+    print('Stabilizing Batch Norm for discriminator')
+    discriminator.train()
+    for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+        batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate').to(gpu)
+        _ = discriminator(batch_data)
 
+    print('Stabilizing Batch Norm for generator')
+    generator.train()
+    for i in range(0, len(dataloader)):
+        noise = torch.randn(int(opt.batch_size), 100, 1, 1, device=gpu)
+        _ = generator(noise)
 
-print('Computing on real data')
-discriminator.eval()
-for n_batch, (batch_data, _) in enumerate(dataloader, 0):
-    batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate').to(gpu)
+    true_positive = 0
+    false_negative = 0
 
-    relu, probs = discriminator(batch_data)
-    true_positive += len(probs[probs > 0.5])
-    false_negative += len(probs[probs < 0.5])
+    print('Computing on real data')
+    discriminator.eval()
+    for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+        batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate').to(gpu)
 
-print('TP: {} FP: {}'.format(true_positive, false_negative))
+        _, probs = discriminator(batch_data)
+        true_positive += len(probs[probs > 0.5])
+        false_negative += len(probs[probs < 0.5])
 
-iterations = len(dataset) / int(opt.batch_size)
-full_it = int(iterations)
-remainder = iterations - full_it
+    print('TP: {} FN: {}'.format(true_positive, false_negative))
 
-true_negative = 0
-false_positive = 0
+    true_negative = 0
+    false_positive = 0
 
-print('Computing on fake data')
-generator.eval()
-for i in range(full_it):
-    noise = torch.randn(int(opt.batch_size), 100, 1, 1, device=gpu)
-    images = generator(noise)
-    images = F.pad(images, (p, p, p, p), mode='replicate')
+    print('Computing on fake data')
+    generator.eval()
+    for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+        noise = torch.randn(batch_data.size(0), 100, 1, 1, device=gpu)
+        images = generator(noise)
+        images = F.pad(images, (p, p, p, p), mode='replicate')
 
-    relu, probs = discriminator(images)
+        _, probs = discriminator(images)
 
-    true_negative += len(probs[probs < 0.5])
-    false_positive += len(probs[probs > 0.5])
+        true_negative += len(probs[probs < 0.5])
+        false_positive += len(probs[probs > 0.5])
 
-print('FP: {} TN: {}'.format(true_negative, false_positive))
+    print('TN: {} FP: {}'.format(true_negative, false_positive))
 
-noise = torch.randn(int(remainder * int(opt.batch_size)), 100, 1, 1, device=gpu)
-images = generator(noise)
-images = F.pad(images, (p, p, p, p), mode='replicate')
-
-scores = discriminator(images)
-
-true_negative += len(probs[probs < 0.5])
-false_positive += len(probs[probs > 0.5])
-
-text_file = open("{}/{}.txt".format(outf, opt.filename), "w+")
-text_file.write('__________|____ positive ____|____ negative ____|\n')
-text_file.write('_positive_|______ {} ______|______ {} ________|\n'.format(true_positive, false_negative))
-text_file.write('_negative_|______ {} ______|______ {} ________|  '.format(false_positive, true_negative))
-text_file.close()
+    text_file = open("{}/{}.txt".format(outf, opt.filename), "w+")
+    text_file.write(f'{true_positive} {false_negative} {false_positive} {true_negative}\n')
+    text_file.close()
