@@ -345,7 +345,6 @@ class GeneratorNetLessCheckerboardUpsample(nn.Module):
             nn.Conv2d(ngf, ngf * 16, 3, stride=1, padding=1),
             nn.BatchNorm2d(ngf * 16),
             nn.LeakyReLU(0.2, inplace=True),
-            # nn.Upsample(scale_factor=2),
             nn.Conv2d(ngf * 16, ngf * 8, 3, stride=1, padding=1),
             nn.BatchNorm2d(ngf * 8),
             nn.LeakyReLU(0.2, inplace=True),
@@ -454,7 +453,6 @@ class DiscriminatorNetLessCheckerboardToCanonical(nn.Module):
         # relevance propagation
         else:
             probability = self.lastConvolution(output)
-            print('Before sigmoid: {}'.format(probability.item()))
             probability = self.sigmoid(probability)
 
             output = self.lastConvolution(output, flip=flip)

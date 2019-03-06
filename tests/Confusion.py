@@ -83,7 +83,6 @@ def loadGenerator(gen, dict):
         del dict['net.13.num_batches_tracked']
     generator.load_state_dict(dict)
     generator.to(gpu)
-    generator.eval()
     return generator
 
 
@@ -97,10 +96,10 @@ def loadDiscriminator(discr, dict):
     discriminator.to(gpu)
     discriminator.passBatchNormParametersToConvolution()
     discriminator.removeBatchNormLayers()
-    discriminator.eval()
     return discriminator
 
 
+# generator = dcgm.GeneratorNetLessCheckerboardUpsample(nc, ngf=128, ngpu=opt.ngpu)
 generator = dcgm.GeneratorNetLessCheckerboard(nc, ngf=128, ngpu=opt.ngpu)
 discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonical(nc=nc, alpha=2, ndf=128, ngpu=opt.ngpu)
 
@@ -113,11 +112,20 @@ generator = loadGenerator(generator, dict_g)
 true_positive = 0
 false_negative = 0
 
-
 p = 1
-print('Computing on real data')
 for n_batch, (batch_data, _) in enumerate(dataloader, 0):
-    batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate')
+    batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate').to(gpu)
+    _ = discriminator(batch_data)
+
+for i in range(0, len(dataloader)):
+    noise = torch.randn(int(opt.batch_size), 100, 1, 1, device=gpu)
+    _ = generator(noise)
+
+
+print('Computing on real data')
+discriminator.eval()
+for n_batch, (batch_data, _) in enumerate(dataloader, 0):
+    batch_data = F.pad(batch_data, (p, p, p, p), mode='replicate').to(gpu)
 
     relu, probs = discriminator(batch_data)
     true_positive += len(probs[probs > 0.5])
@@ -133,6 +141,7 @@ true_negative = 0
 false_positive = 0
 
 print('Computing on fake data')
+generator.eval()
 for i in range(full_it):
     noise = torch.randn(int(opt.batch_size), 100, 1, 1, device=gpu)
     images = generator(noise)
