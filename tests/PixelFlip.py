@@ -217,7 +217,7 @@ for percent in range(0, opt.p):
         after_score.append(test_prob.detach().item())
 
         if test_prob.detach().item() > 0.5:
-            test_result, test_prob = discriminator(batch_data, flip=False)
+            test_result, test_prob = discriminator(flipped_image, flip=False)
             test_relevance = discriminator.relprop(flip=False)
         else:
             test_relevance = discriminator.relprop(flip=flip)
