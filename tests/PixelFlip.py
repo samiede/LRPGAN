@@ -43,7 +43,7 @@ parser.add_argument('--num_images', default=1000, type=int)
 parser.add_argument('--dataset', help='mnist | anime | custom', required=True, choices=['mnist', 'anime', 'custom', 'ciphar10'])
 parser.add_argument('--k', help='Number of pixels to flip', type=int, default=None)
 parser.add_argument('--p', help='Percent of pixels to flip', type=int)
-parser.add_argument('highest', action='store_true')
+parser.add_argument('--highest', action='store_true')
 parser.add_argument('--filename')
 opt = parser.parse_args()
 ngpu = int(opt.ngpu)
@@ -135,7 +135,7 @@ print('Created Logger')
 
 p = 1
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=64,
-                                         shuffle=False, num_workers=2)
+                                         shuffle=False, num_workers=0)
 
 discriminator = dcgm.DiscriminatorNetLessCheckerboardToCanonicalAB(nc=nc, alpha=opt.alpha, ndf=128, ngpu=ngpu)
 dict = torch.load(opt.loadD, map_location='cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -164,7 +164,7 @@ discriminator.removeBatchNormLayers()
 discriminator.eval()
 
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
-                                         shuffle=False, num_workers=2)
+                                         shuffle=False, num_workers=0)
 
 flip = True
 all_before_scores = []
